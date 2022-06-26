@@ -1,3 +1,5 @@
+mod images;
+
 use crate::MyData;
 use actix_web::{web, HttpResponse};
 use handlebars::Handlebars;
@@ -7,6 +9,8 @@ use std::{
     fs, include_str,
     path::{Path, PathBuf},
 };
+
+pub(crate) use self::images::{get_file, get_file_thumb};
 
 const THUMBNAIL_SIZE: u32 = 100;
 

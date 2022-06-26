@@ -1,12 +1,11 @@
 mod files;
 
-use crate::files::{dir_list, image_list};
-use actix_files::NamedFile;
-use actix_web::{error, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result};
+use crate::files::{get_file, get_file_thumb, image_list};
+use actix_web::{error, web, App, Error, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
 use rusqlite::Connection;
-use std::{borrow::Borrow, path::PathBuf, sync::Mutex};
+use std::{path::PathBuf, sync::Mutex};
 
 struct MyData {
     home_path: PathBuf,
@@ -54,17 +53,6 @@ implement_static_bytes!(get_up_icon, "../assets/up.png");
 implement_static_bytes!(get_left_icon, "../assets/left.png");
 implement_static_bytes!(get_right_icon, "../assets/right.png");
 
-async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data
-        .path
-        .lock()
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?
-        .join(path);
-    println!("Opening {:?}", abs_path);
-    Ok(NamedFile::open(abs_path)?)
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
@@ -111,6 +99,7 @@ async fn main() -> std::io::Result<()> {
                 "/main.js",
                 web::get().to(|| async { include_str!("main.js") }),
             )
+            .route("/files/t/{file:.*}", web::get().to(get_file_thumb))
             .route("/files/{file:.*}", web::get().to(get_file))
             .route("/home.png", web::get().to(get_home_icon))
             .route("/up.png", web::get().to(get_up_icon))
