@@ -5,13 +5,19 @@ use actix_web::{error, web, App, Error, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
 use rusqlite::Connection;
-use std::{path::PathBuf, sync::Mutex};
+use std::{collections::HashMap, path::PathBuf, sync::Mutex, time::Instant};
+
+struct CacheEntry {
+    new: bool,
+    modified: f64,
+    data: Vec<u8>,
+}
 
 struct MyData {
     home_path: PathBuf,
     path: Mutex<PathBuf>,
-    // cache: Mutex<HashMap<PathBuf, CacheEntry>>,
-    // conn: Mutex<Connection>,
+    cache: Mutex<HashMap<PathBuf, CacheEntry>>,
+    conn: Mutex<Connection>,
     // stats: Mutex<StatsBundle>,
 }
 
@@ -86,11 +92,11 @@ async fn main() -> std::io::Result<()> {
     let data = web::Data::new(MyData {
         home_path: canonicalize(PathBuf::from(&args.path))?,
         path: Mutex::new(canonicalize(PathBuf::from(args.path))?),
-        // cache: Mutex::new(HashMap::default()),
-        // conn: Mutex::new(conn),
+        cache: Mutex::new(HashMap::default()),
+        conn: Mutex::new(conn),
         // stats: Mutex::default(),
     });
-    // let data_copy = data.clone();
+    let data_copy = data.clone();
     let result = HttpServer::new(move || {
         App::new()
             .app_data(data.clone())
@@ -100,7 +106,7 @@ async fn main() -> std::io::Result<()> {
                 web::get().to(|| async { include_str!("main.js") }),
             )
             .route("/files", web::get().to(get_file_list))
-            .route("/thumb/{file:.*}", web::get().to(get_file_thumb))
+            .route("/thumbs/{file:.*}", web::get().to(get_file_thumb))
             .route("/files/{file:.*}", web::get().to(get_file))
             .route("/home.png", web::get().to(get_home_icon))
             .route("/up.png", web::get().to(get_up_icon))
@@ -111,67 +117,51 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await;
 
-    // let cache = data_copy.cache.lock().unwrap();
+    let cache = data_copy.cache.lock().unwrap();
 
-    // if *ekey != Encrypt3Key::default() {
-    //     let mut stats = data_copy.stats.lock().unwrap();
-    //     let time_save_db = Instant::now();
-    //     (|| -> Result<(), rusqlite::Error> {
-    //         let filter = |(_, entry): &(&PathBuf, &CacheEntry)| entry.new;
-    //         println!(
-    //             "Saving {}/{} cached thumbnails...",
-    //             cache.iter().filter(filter).count(),
-    //             cache.len()
-    //         );
+    let time_save_db = Instant::now();
+    (|| -> Result<(), rusqlite::Error> {
+        let filter = |(_, entry): &(&PathBuf, &CacheEntry)| entry.new;
+        println!(
+            "Saving {}/{} cached thumbnails...",
+            cache.iter().filter(filter).count(),
+            cache.len()
+        );
 
-    //         let mut db = data_copy.conn.lock().unwrap();
+        let mut db = data_copy.conn.lock().unwrap();
 
-    //         let tx = db.transaction()?;
+        let tx = db.transaction()?;
 
-    //         for (key, value) in cache.iter().filter(filter) {
-    //             let path_str = key.as_os_str();
-    //             let time_thumb_encrypt = Instant::now();
-    //             let mut reader: &[u8] = &value.data;
-    //             let byte_contents = encrypt3_fast(&*ekey, &mut reader);
-    //             stats
-    //                 .thumbnail_encrypt
-    //                 .add(time_thumb_encrypt.elapsed().as_micros());
-    //             if tx
-    //                 .query_row(
-    //                     "SELECT path FROM file WHERE path=?1",
-    //                     [path_str.to_str()],
-    //                     |row| row.get::<_, String>(0),
-    //                 )
-    //                 .is_ok()
-    //             {
-    //                 tx.execute(
-    //                     "UPDATE file SET modified = ?2, data = ?3 WHERE path = ?1",
-    //                     rusqlite::params![path_str.to_str(), value.modified, byte_contents],
-    //                 )?;
-    //             } else {
-    //                 tx.execute(
-    //                     "INSERT INTO file (path, modified, data) VALUES (?1, ?2, ?3)",
-    //                     rusqlite::params![path_str.to_str(), value.modified, byte_contents],
-    //                 )?;
-    //             }
-    //         }
-    //         tx.commit()?;
-    //         Ok(())
-    //     })()
-    //     .expect("Error in saving cache");
-    //     println!(
-    //         "time save db: {} ms",
-    //         time_save_db.elapsed().as_micros() as f64 / 1000.
-    //     );
-    //     println!("======= Average stats ========");
-    //     println!("file_size: {} kb", stats.file_size);
-    //     println!("read_disk: {} ms", stats.read_disk);
-    //     println!("decrypt_image: {} ms", stats.decrypt_image);
-    //     println!("decode_image: {} ms", stats.decode_image);
-    //     println!("thumbnail: {} ms", stats.thumbnail);
-    //     println!("thumbnail_encode: {} ms", stats.thumbnail_encode);
-    //     println!("thumbnail_encrypt: {} ms", stats.thumbnail_encrypt);
-    // }
+        for (key, value) in cache.iter().filter(filter) {
+            let path_str = key.as_os_str();
+            let byte_contents: &[u8] = &value.data;
+            if tx
+                .query_row(
+                    "SELECT path FROM file WHERE path=?1",
+                    [path_str.to_str()],
+                    |row| row.get::<_, String>(0),
+                )
+                .is_ok()
+            {
+                tx.execute(
+                    "UPDATE file SET modified = ?2, data = ?3 WHERE path = ?1",
+                    rusqlite::params![path_str.to_str(), value.modified, byte_contents],
+                )?;
+            } else {
+                tx.execute(
+                    "INSERT INTO file (path, modified, data) VALUES (?1, ?2, ?3)",
+                    rusqlite::params![path_str.to_str(), value.modified, byte_contents],
+                )?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    })()
+    .expect("Error in saving cache");
+    println!(
+        "time save db: {} ms",
+        time_save_db.elapsed().as_micros() as f64 / 1000.
+    );
 
     result
 }

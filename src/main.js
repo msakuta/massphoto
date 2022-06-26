@@ -238,7 +238,8 @@ window.addEventListener('load', async () => {
         captionElem.innerHTML = image.label;
         thumbContainer.appendChild(captionElem);
         const imageElem = document.createElement("img");
-        imageElem.src = `/files/${image.path}`;
+        imageElem.className = "zoomInt";
+        imageElem.src = `/thumbs/${image.path}`;
         thumbContainer.appendChild(imageElem);
 
         imageElem.addEventListener("mouseup", (event) => {
