@@ -78,6 +78,10 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(data.clone())
             .route("/", web::get().to(image_list))
+            .route(
+                "/main.js",
+                web::get().to(|| async { include_str!("main.js") }),
+            )
     })
     .bind((args.host, args.port))?
     .run()
