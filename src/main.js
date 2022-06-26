@@ -3,22 +3,6 @@ var scale = 1.;
 var translate = [300, 300];
 var focus = null;
 
-const dirs = document.getElementsByClassName("dir");
-Array.prototype.forEach.call(dirs, function(dir){
-    dir.addEventListener("mouseup", (event) => {
-        event.preventDefault();
-        if (event.which !== 3) return;
-        fetch("/path", {
-            method: "POST",
-            body: dir.getAttribute("path"),
-        })
-        .then(() => location.reload())
-    });
-    dir.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-    });
-})
-
 const imageContainer = document.getElementById("imageContainer");
 
 const zoomedImage = document.getElementById("zoomedImage");
@@ -47,8 +31,8 @@ function applyZoom(event, preventDefault=false){
 
 function setFocus(image){
     focus = focus !== image ? image : null;
-    zoomedImage.setAttribute("src", `files/${image.path}`);
     if(focus){
+        zoomedImage.setAttribute("src", `files/${joinPath(rootPath, image.path)}`);
         imageContainer.style.display = "block";
         imageContainer.style.position = "fixed";
         imageContainer.style.left = "0";
@@ -95,7 +79,7 @@ function selectImage(image) {
 var dragStart = null;
 imageContainer.addEventListener("mouseup", (event) => {
     event.preventDefault();
-    if (event.button !== 2) return;
+    if (event.button !== 0) return;
     setFocus(focus);
     return false;
 })
@@ -221,6 +205,15 @@ let rootPath = "";
 
 window.addEventListener('load', async () => loadPage(rootPath));
 
+function joinPath(root, path){
+    if(root === ""){
+        return path;
+    }
+    else {
+        return root + "/" + path;
+    }
+}
+
 async function loadPage(path){
     const res = await fetch(`/file_list/${path}`);
     const json = await res.json();
@@ -229,6 +222,8 @@ async function loadPage(path){
     pathElem.innerHTML = `"${json.path}", ${json.dirs.length} dirs, ${json.files.length} files`;
 
     const thumbnailsElem = document.getElementById("thumbnails");
+
+    setFocus(null);
 
     while(thumbnailsElem.firstChild){
         thumbnailsElem.removeChild(thumbnailsElem.firstChild);
@@ -244,7 +239,7 @@ async function loadPage(path){
         thumbContainer.appendChild(captionElem);
         if(dir.image_first){
             const imageElem = document.createElement("img");
-            imageElem.src = `/thumbs/${dir.image_first}`;
+            imageElem.src = `/thumbs/${joinPath(rootPath, dir.image_first)}`;
             thumbContainer.appendChild(imageElem);
         }
 
@@ -271,17 +266,17 @@ async function loadPage(path){
         thumbContainer.appendChild(captionElem);
         const imageElem = document.createElement("img");
         imageElem.className = "zoomInt";
-        imageElem.src = `/thumbs/${image.path}`;
+        imageElem.src = `/thumbs/${joinPath(rootPath, image.path)}`;
         thumbContainer.appendChild(imageElem);
 
         imageElem.addEventListener("mouseup", (event) => {
             event.preventDefault();
             if (event.button === 0) {
-                selectImage(imageElem);
-                return false;
+                setFocus(image, imageElem);
             }
             if (event.button === 2){
-                setFocus(image, imageElem);
+                selectImage(imageElem);
+                return false;
             }
             return false;
         });

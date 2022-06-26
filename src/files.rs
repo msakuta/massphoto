@@ -21,7 +21,7 @@ const THUMBNAIL_SIZE: u32 = 100;
 enum Entry {
     Dir {
         path: String,
-        image_first: String,
+        image_first: Option<String>,
         file_count: usize,
     },
     File {
@@ -42,7 +42,7 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
             if path.is_dir() {
                 Some(Entry::Dir {
                     path: path.file_name()?.to_str()?.to_owned(),
-                    image_first: image_first(&path),
+                    image_first: image_first(&path).and_then(|path| path.to_str().map(|s| s.to_owned())),
                     file_count: file_count(&path),
                 })
             } else if let Some(os_str) = path.extension() {
@@ -167,35 +167,23 @@ pub(crate) fn file_count(path: &Path) -> usize {
         .count()
 }
 
-pub(crate) fn image_first(path: &Path) -> String {
+pub(crate) fn image_first(path: &Path) -> Option<PathBuf> {
     fs::read_dir(path)
         .unwrap()
-        .filter_map(|res| {
-            let path = res.ok()?.path();
+        .filter_map(|res| res.ok())
+        .find(|res| {
+            let path = res.path();
             if path.is_file() {
-                path.file_name().unwrap().to_str().map(|s| s.to_string())
+                let ext_lc = path.extension().map(|s| s.to_ascii_lowercase());
+                match ext_lc.as_ref().and_then(|s| s.to_str()) {
+                    Some("jpg") | Some("png") => true,
+                    _ => false,
+                }
             } else {
-                None
+                false
             }
         })
-        .next()
-        .map(|s| {
-            let ext_lc = Path::new(&s).extension().map(|s| s.to_ascii_lowercase());
-            match ext_lc.as_ref().and_then(|s| s.to_str()) {
-                Some("jpg") => format!(
-                    "t/{}/{}",
-                    path.file_name().unwrap().to_str().unwrap().to_owned(),
-                    &s
-                ),
-                Some("png") => format!(
-                    "t/{}/{}",
-                    path.file_name().unwrap().to_str().unwrap().to_owned(),
-                    &s,
-                ),
-                _ => "".to_owned(),
-            }
-        })
-        .unwrap_or_else(|| "".to_owned())
+        .map(|entry| entry.path())
 }
 
 pub(crate) fn dir_list(path: &Path) -> anyhow::Result<Vec<PathBuf>> {
