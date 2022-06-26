@@ -46,25 +46,8 @@ function applyZoom(event, preventDefault=false){
 }
 
 function setFocus(image){
-    let imageUrl = null;
-    let imageSrc = null;
-    for(let i = 0; i < image.childNodes.length; i++){
-        const child = image.childNodes[i];
-        if(child instanceof HTMLImageElement){
-            const src = child.src;
-            const regex = /\/files\/t\//;
-            const regex2 = /\/files\/e\/t\//;
-            imageUrl = src.replace(regex, "/files/").replace(regex2, "/files/e/");
-        }
-        if(child instanceof HTMLDivElement){
-            const regex = /^e\/t\//;
-            imageSrc = child.innerHTML.replace(regex, "");
-        }
-    }
     focus = focus !== image ? image : null;
-    if(imageUrl !== null){
-        zoomedImage.setAttribute("src", imageUrl);
-    }
+    zoomedImage.setAttribute("src", `files/${image.path}`);
     if(focus){
         imageContainer.style.display = "block";
         imageContainer.style.position = "fixed";
@@ -72,7 +55,7 @@ function setFocus(image){
         imageContainer.style.top = "0";
         imageContainer.style.transform = `translate(${translate[0]}px, ${translate[1]}px) scale(${scale})`;
         imageContainer.style.zIndex = 100;
-        zoomedPath.innerHTML = imageSrc;
+        zoomedPath.innerHTML = image.basename;
     }
     else{
         imageContainer.style.display = "none";
@@ -96,11 +79,6 @@ async function callAPISingle(src, api, filter = x => x) {
     }
 }
 
-const regexE = /e\//;
-
-const encryptSingle = (src) => callAPISingle(src, "encrypt_file");
-const shredSingle = (src) => callAPISingle(src, "shred", x => x.replace(regexE, ""));
-
 function selectImage(image) {
     const originPath = image.getAttribute("originPath");
     if(originPath in selectedImages){
@@ -113,24 +91,6 @@ function selectImage(image) {
     }
 }
 
-let images = document.getElementsByClassName("zoomable");
-Array.prototype.forEach.call(images, function(image){
-    image.addEventListener("mouseup", (event) => {
-        event.preventDefault();
-        if (event.button === 0) {
-            selectImage(image);
-            return false;
-        }
-        if (event.button === 2){
-            if(mode === NoMode)
-                setFocus(image);
-        }
-        return false;
-    });
-    image.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-    })
-})
 
 var dragStart = null;
 imageContainer.addEventListener("mouseup", (event) => {
@@ -177,61 +137,6 @@ applyOnClick("home");
 applyOnClick("up");
 applyOnClick("left");
 applyOnClick("right");
-
-const NoMode = 0;
-const EncryptMode = 1;
-const ShredMode = 2;
-let mode = NoMode;
-const encryptButton = document.getElementById("encryptButton");
-if(encryptButton){
-    encryptButton.onclick = async (event) => {
-        event.stopPropagation();
-        if(Object.getOwnPropertyNames(selectedImages).length === 0){
-            alert("No files are selected");
-            return;
-        }
-        const promises = Object.getOwnPropertyNames(selectedImages).map(encryptSingle);
-        const results = await Promise.all(promises);
-        alert(`Results:\n${
-            results.reduce((acc, cur) => acc + `[${cur[0]}]: ${cur[1]}` + "\n", "")
-        }`);
-        location.reload(); // Reload to reflect the fact that the file is removed
-    };
-}
-
-let shredding = false;
-const shredButton = document.getElementById("shredButton");
-if(shredButton){
-    shredButton.onclick = async (event) => {
-        event.stopPropagation();
-        if(Object.getOwnPropertyNames(selectedImages).length === 0){
-            alert("No files are selected");
-            return;
-        }
-        if(!confirm(`Are you sure you want to delete these files?\n${Object.getOwnPropertyNames(selectedImages).reduce((acc, cur) => {
-            return acc !== "" ? acc + "\n" + cur : cur;
-        }, "")}`)){
-            return;
-        }
-        // Shreading multiple files at the same time may fail because of file renaming, so we need to
-        // run them in serial rather than parallel.
-        const results = [];
-        for(const image of Object.getOwnPropertyNames(selectedImages)){
-            results.push(await shredSingle(image));
-        }
-        alert(`Results:\n${
-            results.reduce((acc, cur) => acc + `[${cur[0]}]: ${cur[1]}` + "\n", "")
-        }`);
-        location.reload(); // Reload to reflect the fact that the file is removed
-    };
-}
-
-function updateButtons(){
-    if(encryptButton)
-        encryptButton.style.boxShadow = mode === EncryptMode ? "0px 0px 5px red" : "";
-    if(shredButton)
-        shredButton.style.boxShadow = mode === ShredMode ? "0px 0px 5px red" : "";
-}
 
 // stop annoying context menu on right click
 document.addEventListener("contextmenu", event => event.preventDefault());
@@ -301,3 +206,56 @@ async function loadVideo(vidURL){
         mediaTitle.innerHTML = vidURL;
     }
 }
+
+window.addEventListener('load', async () => {
+    const res = await fetch("/files");
+    const json = await res.json();
+
+    const thumbnailsElem = document.getElementById("thumbnails");
+
+    for(let i in json.dirs) {
+        const dir = json.dirs[i];
+        const thumbContainer = document.createElement("div");
+        thumbContainer.className = "dir showcase";
+        const captionElem = document.createElement("div");
+        captionElem.className = "abs labelText smallText";
+        captionElem.innerHTML = dir.file_count;
+        thumbContainer.appendChild(captionElem);
+        if(dir.image_first){
+            const imageElem = document.createElement("img");
+            imageElem.src = `/thumbs/${dir.image_first}`;
+            thumbContainer.appendChild(imageElem);
+        }
+        thumbnailsElem.appendChild(thumbContainer);
+    }
+
+    for(let i in json.files) {
+        const image = json.files[i];
+        const thumbContainer = document.createElement("div");
+        thumbContainer.className = "dir showcase";
+        const captionElem = document.createElement("div");
+        captionElem.className = "abs labelText smallText";
+        captionElem.innerHTML = image.label;
+        thumbContainer.appendChild(captionElem);
+        const imageElem = document.createElement("img");
+        imageElem.src = `/files/${image.path}`;
+        thumbContainer.appendChild(imageElem);
+
+        imageElem.addEventListener("mouseup", (event) => {
+            event.preventDefault();
+            if (event.button === 0) {
+                selectImage(imageElem);
+                return false;
+            }
+            if (event.button === 2){
+                setFocus(image, imageElem);
+            }
+            return false;
+        });
+        imageElem.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+        });
+
+        thumbnailsElem.appendChild(thumbContainer);
+    }
+});

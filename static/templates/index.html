@@ -127,31 +127,7 @@
             <img id="zoomedImage" class="zoomInt noPointer" src="">
         </div>
         <br>
-        <div class='dirContainer'>
-            {{#each dirs}}
-            <div class="dir showcase" path="{{ path }}">
-                <div class="abs labelText smallText">{{ path }} ({{ file_count }})</div>
-                <img src="/files/{{ image_first }}">
-            </div>
-            {{/each}}
-            {{#each files}}
-                {{#if video}}
-                <div class='showcase video' originPath="{{path}}" src="/files/{{path}}">
-                    {{#if encrypted}}
-                        <img class="smallIcon" alt="encrypt" id="encryptButton" src="/encrypt.png">
-                    {{/if}}
-                    <div>{{label}}</div>
-                </div>
-                {{else}}
-                <div class='showcase zoomable' originPath="{{path}}">
-                    {{#if encrypted}}
-                        <img class="smallIcon abs bottom" alt="encrypt" id="encryptButton" src="/encrypt.png">
-                    {{/if}}
-                    <div class="abs labelText smallText" alt="path">{{basename}}</div>
-                    <img class='zoomInt' src="/files/{{path}}">
-                </div>
-                {{/if}}
-            {{/each}}
+        <div class='dirContainer' id="thumbnails">
         </div>
         <script src="/main.js">
         </script>

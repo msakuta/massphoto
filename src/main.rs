@@ -1,6 +1,6 @@
 mod files;
 
-use crate::files::{get_file, get_file_thumb, image_list};
+use crate::files::{get_file, get_file_list, get_file_thumb, image_list};
 use actix_web::{error, web, App, Error, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
@@ -99,7 +99,8 @@ async fn main() -> std::io::Result<()> {
                 "/main.js",
                 web::get().to(|| async { include_str!("main.js") }),
             )
-            .route("/files/t/{file:.*}", web::get().to(get_file_thumb))
+            .route("/files", web::get().to(get_file_list))
+            .route("/thumb/{file:.*}", web::get().to(get_file_thumb))
             .route("/files/{file:.*}", web::get().to(get_file))
             .route("/home.png", web::get().to(get_home_icon))
             .route("/up.png", web::get().to(get_up_icon))
