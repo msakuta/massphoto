@@ -2,7 +2,11 @@ use crate::MyData;
 use actix_web::{web, HttpResponse};
 use handlebars::Handlebars;
 use serde_json::json;
-use std::{ffi::OsStr, fs, include_str, path::Path};
+use std::{
+    ffi::OsStr,
+    fs, include_str,
+    path::{Path, PathBuf},
+};
 
 const THUMBNAIL_SIZE: u32 = 100;
 
@@ -172,4 +176,26 @@ pub(crate) fn image_first(path: &Path) -> String {
             }
         })
         .unwrap_or_else(|| "".to_owned())
+}
+
+pub(crate) fn dir_list(path: &Path) -> anyhow::Result<Vec<PathBuf>> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("No parent directory"))?;
+
+    Ok(fs::read_dir(parent)
+        .unwrap()
+        .filter_map(|res| {
+            res.map(|e| {
+                let path = e.path();
+                if path.is_dir() {
+                    Some(path)
+                } else {
+                    None
+                }
+            })
+            .ok()
+            .flatten()
+        })
+        .collect())
 }

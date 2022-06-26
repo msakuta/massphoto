@@ -1,14 +1,15 @@
 mod files;
 
-use crate::files::image_list;
-use actix_web::{web, App, HttpResponse, HttpServer};
+use crate::files::{dir_list, image_list};
+use actix_files::NamedFile;
+use actix_web::{error, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result};
 use clap::Parser;
 use dunce::canonicalize;
 use rusqlite::Connection;
-use std::{path::PathBuf, sync::Mutex};
+use std::{borrow::Borrow, path::PathBuf, sync::Mutex};
 
 struct MyData {
-    // home_path: PathBuf,
+    home_path: PathBuf,
     path: Mutex<PathBuf>,
     // cache: Mutex<HashMap<PathBuf, CacheEntry>>,
     // conn: Mutex<Connection>,
@@ -34,6 +35,34 @@ struct Args {
         help = "The host address to listen to. By default, only the localhost can access."
     )]
     host: String,
+}
+
+fn map_err(err: impl ToString) -> Error {
+    error::ErrorInternalServerError(err.to_string())
+}
+
+macro_rules! implement_static_bytes {
+    ($func:ident, $path:literal) => {
+        async fn $func() -> &'static [u8] {
+            include_bytes!($path)
+        }
+    };
+}
+
+implement_static_bytes!(get_home_icon, "../assets/home.png");
+implement_static_bytes!(get_up_icon, "../assets/up.png");
+implement_static_bytes!(get_left_icon, "../assets/left.png");
+implement_static_bytes!(get_right_icon, "../assets/right.png");
+
+async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
+    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+    let abs_path = data
+        .path
+        .lock()
+        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?
+        .join(path);
+    println!("Opening {:?}", abs_path);
+    Ok(NamedFile::open(abs_path)?)
 }
 
 #[actix_web::main]
@@ -67,7 +96,7 @@ async fn main() -> std::io::Result<()> {
     }
 
     let data = web::Data::new(MyData {
-        // home_path: canonicalize(PathBuf::from(&args.path))?,
+        home_path: canonicalize(PathBuf::from(&args.path))?,
         path: Mutex::new(canonicalize(PathBuf::from(args.path))?),
         // cache: Mutex::new(HashMap::default()),
         // conn: Mutex::new(conn),
@@ -82,6 +111,11 @@ async fn main() -> std::io::Result<()> {
                 "/main.js",
                 web::get().to(|| async { include_str!("main.js") }),
             )
+            .route("/files/{file:.*}", web::get().to(get_file))
+            .route("/home.png", web::get().to(get_home_icon))
+            .route("/up.png", web::get().to(get_up_icon))
+            .route("/left.png", web::get().to(get_left_icon))
+            .route("/right.png", web::get().to(get_right_icon))
     })
     .bind((args.host, args.port))?
     .run()
