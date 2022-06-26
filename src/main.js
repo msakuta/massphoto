@@ -120,7 +120,7 @@ imageContainer.addEventListener("mouseleave", (event) => {
 imageContainer.addEventListener("wheel", (event) => applyZoom(event, true));
 
 
-function applyOnClick(name){
+function applyOnClick(name, callback){
     const button = document.getElementById(`${name}Button`);
     if(button){
         button.onclick = (event) => {
@@ -128,15 +128,18 @@ function applyOnClick(name){
             fetch(name, {
                 method: "POST",
             })
-            .then(() => location.reload());
+            .then(callback);
         }
     }
 }
 
-applyOnClick("home");
-applyOnClick("up");
-applyOnClick("left");
-applyOnClick("right");
+applyOnClick("home", () => {
+    path = "";
+    loadPage(path);
+});
+applyOnClick("up", () => {});
+applyOnClick("left", () => {});
+applyOnClick("right", () => {});
 
 // stop annoying context menu on right click
 document.addEventListener("contextmenu", event => event.preventDefault());
@@ -207,11 +210,19 @@ async function loadVideo(vidURL){
     }
 }
 
-window.addEventListener('load', async () => {
-    const res = await fetch("/files");
+let path = "";
+
+window.addEventListener('load', async () => loadPage(path));
+
+async function loadPage(path){
+    const res = await fetch(`/file_list/${path}`);
     const json = await res.json();
 
     const thumbnailsElem = document.getElementById("thumbnails");
+
+    while(thumbnailsElem.firstChild){
+        thumbnailsElem.removeChild(thumbnailsElem.firstChild);
+    }
 
     for(let i in json.dirs) {
         const dir = json.dirs[i];
@@ -226,6 +237,17 @@ window.addEventListener('load', async () => {
             imageElem.src = `/thumbs/${dir.image_first}`;
             thumbContainer.appendChild(imageElem);
         }
+
+        thumbContainer.addEventListener("mouseup", (event) => {
+            event.preventDefault();
+            if (event.button !== 0) return;
+            path = dir.path;
+            loadPage(path);
+        });
+        thumbContainer.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+        });
+
         thumbnailsElem.appendChild(thumbContainer);
     }
 
@@ -259,4 +281,4 @@ window.addEventListener('load', async () => {
 
         thumbnailsElem.appendChild(thumbContainer);
     }
-});
+}

@@ -6,8 +6,7 @@ use std::{
 
 use rusqlite::Connection;
 
-use super::THUMBNAIL_SIZE;
-use crate::{map_err, CacheEntry, MyData};
+use crate::CacheEntry;
 
 pub(crate) fn load_cache(
     cache: &mut HashMap<PathBuf, CacheEntry>,
@@ -54,7 +53,7 @@ pub(crate) fn load_cache(
     println!(
         "Loaded cache db {} entries in {} ms",
         cache.len(),
-        time_load.elapsed().as_micros() as f64 / 1000.
+        time_load.elapsed().as_micros() as f64 / 1e6
     );
     Ok(())
 }

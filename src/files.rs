@@ -117,8 +117,27 @@ pub(crate) async fn image_list(data: web::Data<MyData>) -> HttpResponse {
     )
 }
 
-pub(crate) async fn get_file_list(data: web::Data<MyData>) -> HttpResponse {
+#[actix_web::get("/file_list/")]
+pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse {
     let path = data.path.lock().unwrap();
+
+    let (dirs, files, _) = scan_dir(&path);
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .json(&json!({
+            "path": *path,
+            "dirs": dirs,
+            "files": files,
+        }))
+}
+
+#[actix_web::get("/file_list/{path}")]
+pub(crate) async fn get_file_list(
+    path: web::Path<PathBuf>,
+    data: web::Data<MyData>,
+) -> HttpResponse {
+    let path = data.path.lock().unwrap().join(path.into_inner());
 
     let (dirs, files, _) = scan_dir(&path);
 
