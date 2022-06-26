@@ -101,7 +101,7 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
     (dirs, files, has_any_video)
 }
 
-pub(crate) async fn image_list(data: web::Data<MyData>) -> HttpResponse {
+pub(crate) async fn index(data: web::Data<MyData>) -> HttpResponse {
     let path = data.path.lock().unwrap();
     let reg = Handlebars::new();
 
@@ -109,7 +109,6 @@ pub(crate) async fn image_list(data: web::Data<MyData>) -> HttpResponse {
         reg.render_template(
             include_str!("../static/templates/index.html"),
             &json!({
-                "path": *path,
                 "THUMBNAIL_SIZE": THUMBNAIL_SIZE,
             }),
         )
@@ -126,7 +125,7 @@ pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse 
     HttpResponse::Ok()
         .content_type("application/json")
         .json(&json!({
-            "path": *path,
+            "path": "",
             "dirs": dirs,
             "files": files,
         }))
@@ -137,9 +136,10 @@ pub(crate) async fn get_file_list(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,
 ) -> HttpResponse {
-    let path = data.path.lock().unwrap().join(path.into_inner());
+    let path = path.into_inner();
+    let abs_path = data.path.lock().unwrap().join(&path);
 
-    let (dirs, files, _) = scan_dir(&path);
+    let (dirs, files, _) = scan_dir(&abs_path);
 
     HttpResponse::Ok()
         .content_type("application/json")

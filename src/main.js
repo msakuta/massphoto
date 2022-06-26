@@ -125,19 +125,26 @@ function applyOnClick(name, callback){
     if(button){
         button.onclick = (event) => {
             event.stopPropagation();
-            fetch(name, {
-                method: "POST",
-            })
-            .then(callback);
+            callback();
         }
     }
 }
 
 applyOnClick("home", () => {
-    path = "";
-    loadPage(path);
+    rootPath = "";
+    loadPage(rootPath);
 });
-applyOnClick("up", () => {});
+applyOnClick("up", () => {
+    const splitPath = rootPath.split("/");
+    if(1 < splitPath.length){
+        rootPath = splitPath.slice(0, splitPath.length - 1).join("/");
+        loadPage(rootPath);
+    }
+    else{
+        rootPath = "";
+        loadPage(rootPath);
+    }
+});
 applyOnClick("left", () => {});
 applyOnClick("right", () => {});
 
@@ -210,13 +217,16 @@ async function loadVideo(vidURL){
     }
 }
 
-let path = "";
+let rootPath = "";
 
-window.addEventListener('load', async () => loadPage(path));
+window.addEventListener('load', async () => loadPage(rootPath));
 
 async function loadPage(path){
     const res = await fetch(`/file_list/${path}`);
     const json = await res.json();
+
+    const pathElem = document.getElementById("path");
+    pathElem.innerHTML = `"${json.path}", ${json.dirs.length} dirs, ${json.files.length} files`;
 
     const thumbnailsElem = document.getElementById("thumbnails");
 
@@ -241,8 +251,8 @@ async function loadPage(path){
         thumbContainer.addEventListener("mouseup", (event) => {
             event.preventDefault();
             if (event.button !== 0) return;
-            path = dir.path;
-            loadPage(path);
+            rootPath = dir.path;
+            loadPage(rootPath);
         });
         thumbContainer.addEventListener("contextmenu", (event) => {
             event.preventDefault();

@@ -47,21 +47,23 @@
             }
             .header {
                 position: fixed;
+                left: 0;
+                top: 0;
                 width: 100%;
+                height: 3em;
                 background-color: rgba(191, 191, 191, 0.75);
                 z-index: 100;
             }
-            .passwdSvg {
-                position: fixed;
-                right: 0px;
-                width: 50px;
-                height: 50px;
-                background-color: rgba(191, 191, 191, 0.5);
-                pointer-events: none;
+            .path {
+                font-size: 1.5em;
             }
-            .headerSpacer {
-                position: relative;
-                height: 2em;
+            .scrollContents {
+                margin-top: 3em;
+            }
+            .iconContainer {
+                position: absolute;
+                top: 0;
+                right: 0;
             }
             .icon {
                 width: 48px;
@@ -109,25 +111,28 @@
             }
         </style></head><body>
         <div class="header">
-            <img class="icon" alt="home" id="homeButton" src="/home.png">
-            <img class="icon" alt="up (U)" id="upButton" src="/up.png">
-            <img class="icon" alt="previous (H)" id="leftButton" src="/left.png">
-            <img class="icon" alt="next (K)" id="rightButton" src="/right.png">
+            <div class="path" id="path"></div>
+            <div class="iconContainer">
+                <img class="icon" alt="home" id="homeButton" src="/home.png">
+                <img class="icon" alt="up (U)" id="upButton" src="/up.png">
+                <img class="icon" alt="previous (H)" id="leftButton" src="/left.png">
+                <img class="icon" alt="next (K)" id="rightButton" src="/right.png">
+            </div>
         </div>
-        <div class="headerSpacer"></div>
-        <h1>Listing {{ path }}: {{ dir_count }} dirs and {{ file_count }} files</h1>
-        <div id="mediaTitle"></div>
-        {{#if hasAnyVideo}}
-        <video controls width="960" height="780" preload="auto" id="src">
-            Your browser does not support the <code>video</code> element.
-        </video>
-        {{/if}}
-        <div id="imageContainer" class="showcase" style="display: none">
-            <div id="zoomedPath" class="abs labelText top" alt="path"></div>
-            <img id="zoomedImage" class="zoomInt noPointer" src="">
-        </div>
-        <br>
-        <div class='dirContainer' id="thumbnails">
+        <div class="scrollContents">
+            {{#if hasAnyVideo}}
+            <div id="mediaTitle"></div>
+            <video controls width="960" height="780" preload="auto" id="src">
+                Your browser does not support the <code>video</code> element.
+            </video>
+            {{/if}}
+            <div id="imageContainer" class="showcase" style="display: none">
+                <div id="zoomedPath" class="abs labelText top" alt="path"></div>
+                <img id="zoomedImage" class="zoomInt noPointer" src="">
+            </div>
+            <br>
+            <div class='dirContainer' id="thumbnails">
+            </div>
         </div>
         <script src="/main.js">
         </script>

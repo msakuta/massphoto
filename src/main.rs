@@ -1,7 +1,7 @@
 mod files;
 
 use crate::files::{
-    get_file, get_file_list, get_file_list_root, get_file_thumb, image_list, load_cache,
+    get_file, get_file_list, get_file_list_root, get_file_thumb, index, load_cache,
 };
 use actix_web::{error, web, App, Error, HttpServer};
 use clap::Parser;
@@ -114,7 +114,7 @@ async fn run() -> anyhow::Result<()> {
     let result = HttpServer::new(move || {
         App::new()
             .app_data(data.clone())
-            .route("/", web::get().to(image_list))
+            .route("/", web::get().to(index))
             .route(
                 "/main.js",
                 web::get().to(|| async { include_str!("main.js") }),
