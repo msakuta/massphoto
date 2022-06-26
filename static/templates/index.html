@@ -1,0 +1,165 @@
+<html>
+        <head>
+        <style>
+            img {
+                width: {{ THUMBNAIL_SIZE }}px;
+                height: {{ THUMBNAIL_SIZE }}px;
+            }
+            .zoomed {
+                position: absolute;
+                top: 3em;
+                left: 0;
+                width: 100%;
+                height: auto;
+            }
+            .dirContainer {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-evenly;
+                align-content: space-between;
+            }
+            .dir {
+                position: relative;
+                padding: 0.1em;
+                margin: 0.1em;
+                background-color: #7ff;
+                border: solid 2px #077;
+            }
+            .container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content:space-evenly;
+                align-content: space-between;
+            }
+            .showcase {
+                /* width: 20em; */
+                /* height: 30em; */
+                width: 100px;
+                height: 100px;
+                background-color: #F0F8FF;
+                padding: 0em;
+                margin-bottom: 5px;
+            }
+            .zoomInt {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+            .header {
+                position: fixed;
+                width: 100%;
+                background-color: rgba(191, 191, 191, 0.75);
+                z-index: 100;
+            }
+            .passwdSvg {
+                position: fixed;
+                right: 0px;
+                width: 50px;
+                height: 50px;
+                background-color: rgba(191, 191, 191, 0.5);
+                pointer-events: none;
+            }
+            .headerSpacer {
+                position: relative;
+                height: 2em;
+            }
+            .icon {
+                width: 48px;
+                height: 48px;
+            }
+            .smallIcon {
+                width: 16px;
+                height: 16px;
+                pointer-events: none;
+            }
+            .abs {
+                position: absolute;
+            }
+            .bottom {
+                bottom: 0px;
+            }
+            .labelText {
+                font-weight: bold;
+                text-shadow: 1px 1px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+                overflow-x: hidden;
+                pointer-events: none;
+            }
+            .top {
+                top: -1em;
+            }
+            .smallText {
+                font-size: 0.7em;
+                pointer-events: none;
+            }
+            .noPointer {
+                pointer-events: none;
+            }
+            #imageContainer {
+                width: 400px;
+                height: 400px;
+            }
+            .zoomable {
+                position: relative;
+            }
+            .selected {
+                border: solid red 2px;
+            }
+            #mediaTitle {
+                font-size: 1.5em;
+            }
+        </style></head><body>
+        <div class="header">
+            Passwd:
+            <input type="password" id="passwd" value=""></input>
+            <button id="button">Set</button>
+            <img class="icon" alt="home" id="homeButton" src="/home.png">
+            <img class="icon" alt="up (U)" id="upButton" src="/up.png">
+            <img class="icon" alt="previous (H)" id="leftButton" src="/left.png">
+            <img class="icon" alt="next (K)" id="rightButton" src="/right.png">
+            <img class="icon" alt="encrypt" id="encryptButton" src="/encrypt.png">
+            <img class="icon" alt="shred" id="shredButton" src="/shred.png">
+        </div>
+        <img class="passwdSvg" src="/passwd.svg">
+        <div class="headerSpacer"></div>
+        <h1>Listing {{ path }}: {{ dir_count }} dirs and {{ file_count }} files</h1>
+        <div id="mediaTitle"></div>
+        {{#if hasAnyVideo}}
+        <video controls width="960" height="780" preload="auto" id="src">
+            Your browser does not support the <code>video</code> element.
+        </video>
+        {{/if}}
+        <div id="imageContainer" class="showcase" style="display: none">
+            <div id="zoomedPath" class="abs labelText top" alt="path"></div>
+            <img id="zoomedImage" class="zoomInt noPointer" src="">
+        </div>
+        <br>
+        <div class='dirContainer'>
+            {{#each dirs}}
+            <div class="dir showcase" path="{{ path }}">
+                <div class="abs labelText smallText">{{ path }} ({{ file_count }})</div>
+                <img src="/files/{{ image_first }}">
+            </div>
+            {{/each}}
+            {{#each files}}
+                {{#if video}}
+                <div class='showcase video' originPath="{{path}}" src="/files/{{path}}">
+                    {{#if encrypted}}
+                        <img class="smallIcon" alt="encrypt" id="encryptButton" src="/encrypt.png">
+                    {{/if}}
+                    <div>{{label}}</div>
+                </div>
+                {{else}}
+                <div class='showcase zoomable' originPath="{{path}}">
+                    {{#if encrypted}}
+                        <img class="smallIcon abs bottom" alt="encrypt" id="encryptButton" src="/encrypt.png">
+                    {{/if}}
+                    <div class="abs labelText smallText" alt="path">{{basename}}</div>
+                    <img class='zoomInt' src="/files/{{path}}">
+                </div>
+                {{/if}}
+            {{/each}}
+        </div>
+        <script src="/main.js">
+        </script>
+    </body>
+</html>
