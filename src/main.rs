@@ -1,11 +1,16 @@
 mod files;
 
-use crate::files::{get_file, get_file_list, get_file_thumb, image_list};
+use crate::files::{get_file, get_file_list, get_file_thumb, image_list, load_cache};
 use actix_web::{error, web, App, Error, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
 use rusqlite::Connection;
-use std::{collections::HashMap, path::PathBuf, sync::Mutex, time::Instant};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Mutex,
+    time::Instant,
+};
 
 struct CacheEntry {
     new: bool,
@@ -61,11 +66,15 @@ implement_static_bytes!(get_right_icon, "../assets/right.png");
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    run()
+        .await
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+}
+
+async fn run() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    let conn = Connection::open("sqliter.db").map_err(|e| {
-        std::io::Error::new(std::io::ErrorKind::Other, format!("rusqlite: {:?}", e))
-    })?;
+    let conn = Connection::open("sqliter.db")?;
 
     if conn
         .query_row(
@@ -89,10 +98,13 @@ async fn main() -> std::io::Result<()> {
         println!("table created!");
     }
 
+    let mut cache = HashMap::new();
+    load_cache(&mut cache, &conn, &Path::new(&args.path))?;
+
     let data = web::Data::new(MyData {
         home_path: canonicalize(PathBuf::from(&args.path))?,
         path: Mutex::new(canonicalize(PathBuf::from(args.path))?),
-        cache: Mutex::new(HashMap::default()),
+        cache: Mutex::new(cache),
         conn: Mutex::new(conn),
         // stats: Mutex::default(),
     });
@@ -160,8 +172,8 @@ async fn main() -> std::io::Result<()> {
     .expect("Error in saving cache");
     println!(
         "time save db: {} ms",
-        time_save_db.elapsed().as_micros() as f64 / 1000.
+        time_save_db.elapsed().as_micros() as f64 / 1e6
     );
 
-    result
+    result.map_err(anyhow::Error::new)
 }
