@@ -1,10 +1,11 @@
+mod files;
+
+use crate::files::image_list;
 use actix_web::{web, App, HttpResponse, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
-use handlebars::Handlebars;
 use rusqlite::Connection;
-use serde_json::json;
-use std::{include_str, path::PathBuf, sync::Mutex};
+use std::{path::PathBuf, sync::Mutex};
 
 struct MyData {
     // home_path: PathBuf,
@@ -145,19 +146,4 @@ async fn main() -> std::io::Result<()> {
     // }
 
     result
-}
-
-async fn image_list(data: web::Data<MyData>) -> HttpResponse {
-    let path = data.path.lock().unwrap();
-    let reg = Handlebars::new();
-
-    HttpResponse::Ok().content_type("text/html").body(
-        reg.render_template(
-            include_str!("../static/templates/index.html"),
-            &json!({
-                "path": *path,
-            }),
-        )
-        .unwrap(),
-    )
 }
