@@ -51,7 +51,7 @@ pub(crate) fn load_cache(
         );
     }
     println!(
-        "Loaded cache db {} entries in {} ms",
+        "Loaded cache db {} entries in {} s",
         cache.len(),
         time_load.elapsed().as_micros() as f64 / 1e6
     );

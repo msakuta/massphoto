@@ -174,7 +174,7 @@ async fn run() -> anyhow::Result<()> {
     })()
     .expect("Error in saving cache");
     println!(
-        "time save db: {} ms",
+        "time save db: {} s",
         time_save_db.elapsed().as_micros() as f64 / 1e6
     );
 

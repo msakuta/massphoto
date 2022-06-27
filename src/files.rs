@@ -49,8 +49,8 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
                 let ext = os_str.to_ascii_lowercase();
                 if ext == "jpg" || ext == "png" {
                     Some(Entry::File {
-                        path: format!("{}", path.file_name().unwrap().to_str().unwrap()),
-                        label: path.file_name().unwrap().to_str().unwrap().to_owned(),
+                        path: format!("{}", path.file_name()?.to_str()?),
+                        label: path.file_name()?.to_str()?.to_owned(),
                         video: false,
                     })
                 } else {
@@ -60,8 +60,8 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
                     {
                         has_any_video = true;
                         Some(Entry::File {
-                            path: path.file_name().unwrap().to_str().unwrap().to_owned(),
-                            label: path.file_name().unwrap().to_str().unwrap().to_owned(),
+                            path: path.file_name()?.to_str()?.to_owned(),
+                            label: path.file_name()?.to_str()?.to_owned(),
                             video: true,
                         })
                     } else {
@@ -156,7 +156,14 @@ pub(crate) async fn get_file_list(
 /// This is not idiomatic, but we can just compare last bytes of known length
 /// to check the extension if the path is UTF-8 encoded.
 pub(crate) fn has_extension_segments(path: &str, extension: &str) -> bool {
-    path[path.len() - extension.len()..] == *extension
+    if extension.len() < path.len() {
+        // Because accessing by bytes does not always split the string at character border
+        // in UTF-8, we want to compare by bytes. This works because UTF-8 is stateless.
+        // Do not try this with other character encodings.
+        path.as_bytes()[path.len() - extension.len()..] == *extension.as_bytes()
+    } else {
+        false
+    }
 }
 
 pub(crate) fn file_count(path: &Path) -> usize {
