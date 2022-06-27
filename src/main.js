@@ -76,13 +76,8 @@ function selectImage(image) {
 }
 
 
-var dragStart = null;
-imageContainer.addEventListener("mouseup", (event) => {
-    event.preventDefault();
-    if (event.button !== 0) return;
-    setFocus(focus);
-    return false;
-})
+let dragStart = null;
+let dragMoved = false;
 imageContainer.addEventListener("mousedown", (event) => {
     event.preventDefault();
     dragStart = [event.clientX, event.clientY];
@@ -93,13 +88,20 @@ imageContainer.addEventListener("mousemove", (event) => {
         translate[1] += event.clientY - dragStart[1];
         imageContainer.style.transform = `translate(${translate[0]}px, ${translate[1]}px) scale(${scale})`;
         dragStart = [event.clientX, event.clientY];
+        dragMoved = true;
     }
 })
 imageContainer.addEventListener("mouseup", (event) => {
+    if(!dragMoved && event.button === 0){
+        setFocus(focus);
+        event.preventDefault();
+    }
     dragStart = null;
+    dragMoved = false;
 });
 imageContainer.addEventListener("mouseleave", (event) => {
     dragStart = null;
+    dragMoved = false;
 });
 imageContainer.addEventListener("wheel", (event) => applyZoom(event, true));
 
