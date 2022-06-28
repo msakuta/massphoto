@@ -1,2 +1,7 @@
 /target
 sqliter.db
+
+/node_modules/
+/public/build/
+
+.DS_Store

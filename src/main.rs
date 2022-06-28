@@ -3,7 +3,8 @@ mod files;
 use crate::files::{
     get_file, get_file_list, get_file_list_root, get_file_thumb, index, load_cache,
 };
-use actix_web::{error, web, App, Error, HttpServer};
+use actix_cors::Cors;
+use actix_web::{error, http, web, App, Error, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
 use rusqlite::Connection;
@@ -112,8 +113,18 @@ async fn run() -> anyhow::Result<()> {
     });
     let data_copy = data.clone();
     let result = HttpServer::new(move || {
+        #[cfg(not(debug_assertions))]
+        let cors = Cors::default()
+            // .allowed_origin("http://localhost:8080/")
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_header(http::header::CONTENT_TYPE)
+            .max_age(3600);
+        #[cfg(debug_assertions)]
+        let cors = Cors::permissive();
+
         App::new()
             .app_data(data.clone())
+            .wrap(cors)
             .route("/", web::get().to(index))
             .route(
                 "/main.js",
