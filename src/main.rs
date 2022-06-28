@@ -38,7 +38,7 @@ struct Args {
     #[clap(
         short,
         long,
-        default_value = "8082",
+        default_value = "8808",
         help = "The port number to listen to."
     )]
     port: u16,

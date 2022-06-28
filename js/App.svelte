@@ -2,8 +2,7 @@
 	import ImageView from './ImageView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
 
-	const host = "localhost:10008";
-	const baseUrl = `http://${host}`;
+	const baseUrl = BASE_URL;
 
 	let rootPath = "";
 
