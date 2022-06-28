@@ -102,18 +102,33 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
 }
 
 pub(crate) async fn index(data: web::Data<MyData>) -> HttpResponse {
-    let path = data.path.lock().unwrap();
     let reg = Handlebars::new();
 
-    HttpResponse::Ok().content_type("text/html").body(
-        reg.render_template(
+    #[cfg(debug_assertions)]
+    let html = reg
+        .render_template(
             include_str!("../static/templates/index.html"),
             &json!({
                 "THUMBNAIL_SIZE": THUMBNAIL_SIZE,
             }),
         )
-        .unwrap(),
-    )
+        .unwrap();
+    #[cfg(not(debug_assertions))]
+    let html = include_str!("../public/index.html");
+
+    HttpResponse::Ok().content_type("text/html").body(html)
+}
+
+#[cfg(debug_assertions)]
+#[actix_web::get("/main.js")]
+pub(crate) async fn code() -> &'static str {
+    include_str!("main.js")
+}
+
+#[cfg(not(debug_assertions))]
+#[actix_web::get("/build/bundle.js")]
+pub(crate) async fn code() -> &'static str {
+    include_str!("../public/build/bundle.js")
 }
 
 #[actix_web::get("/file_list/")]

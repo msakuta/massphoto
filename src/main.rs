@@ -1,7 +1,7 @@
 mod files;
 
 use crate::files::{
-    get_file, get_file_list, get_file_list_root, get_file_thumb, index, load_cache,
+    code, get_file, get_file_list, get_file_list_root, get_file_thumb, index, load_cache,
 };
 use actix_cors::Cors;
 use actix_web::{error, http, web, App, Error, HttpServer};
@@ -126,10 +126,7 @@ async fn run() -> anyhow::Result<()> {
             .app_data(data.clone())
             .wrap(cors)
             .route("/", web::get().to(index))
-            .route(
-                "/main.js",
-                web::get().to(|| async { include_str!("main.js") }),
-            )
+            .service(code)
             .service(get_file_list_root)
             .service(get_file_list)
             .route("/thumbs/{file:.*}", web::get().to(get_file_thumb))
