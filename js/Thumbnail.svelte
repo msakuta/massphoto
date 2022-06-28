@@ -1,4 +1,8 @@
 <script>
+    import { createEventDispatcher } from 'svelte';
+
+    const dispatch = createEventDispatcher();
+
     export let image = {label: "label"};
     export let dir = null;
     export let rootPath = "";
@@ -25,10 +29,10 @@
     function mouseup(event) {
         event.preventDefault();
         if (event.button === 0) {
-            setFocus(image, imageElem);
+            dispatch('setFocus', joinPath(rootPath, image.path));
         }
         if (event.button === 2){
-            selectImage(imageElem);
+            dispatch('selectImage');
             return false;
         }
         return false;

@@ -1,4 +1,5 @@
 <script>
+	import ImageView from './ImageView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
 
 	const host = "localhost:10008";
@@ -15,6 +16,16 @@
 		fileList = json.files;
 	}
 
+	let selectedFile = null;
+
+	function setFocus(evt){
+		selectedFile = evt.detail;
+	}
+
+	function defocus(){
+		selectedFile = null;
+	}
+
 	window.addEventListener('load', () => getFileList(rootPath));
 </script>
 
@@ -28,13 +39,19 @@
 	</div>
 </div>
 
+{#if selectedFile !== null}
+<div class="imageContainer">
+	<ImageView imagePath={`${baseUrl}/files/${selectedFile}`} on:defocus={defocus}/>
+</div>
+{/if}
+
 <div class="scrollContents">
-	<div class='dirContainer' id="thumbnails">
+	<div class='dirContainer' id="thumbnails" style={selectedFile !== null ? 'top: 70%' : ''}>
 		{#each dirList as dir}
 			<Thumbnail {dir} {rootPath} {baseUrl}/>
 		{/each}
 		{#each fileList as file}
-			<Thumbnail image={file} {rootPath} {baseUrl}/>
+			<Thumbnail image={file} {rootPath} {baseUrl} on:setFocus={setFocus}/>
 		{/each}
 	</div>
 </div>
@@ -48,6 +65,15 @@
 		width: 100%;
 		height: 3em;
 		background-color: rgba(191, 191, 191, 0.75);
+		z-index: 100;
+	}
+
+	.imageContainer {
+		position: fixed;
+		left: 0;
+		top: 3em;
+		width: 100%;
+		height: 70%;
 		z-index: 100;
 	}
 
