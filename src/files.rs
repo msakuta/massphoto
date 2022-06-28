@@ -131,6 +131,34 @@ pub(crate) async fn code() -> &'static str {
     include_str!("../public/build/bundle.js")
 }
 
+#[actix_web::get("/global.css")]
+pub(crate) async fn get_global_css() -> HttpResponse {
+    #[cfg(not(debug_assertions))]
+    {
+        HttpResponse::Ok()
+            .content_type("text/css")
+            .body(include_str!("../public/global.css"))
+    }
+    #[cfg(debug_assertions)]
+    {
+        HttpResponse::NotFound().body("Not found")
+    }
+}
+
+#[actix_web::get("/build/bundle.css")]
+pub(crate) async fn get_bundle_css() -> HttpResponse {
+    #[cfg(not(debug_assertions))]
+    {
+        HttpResponse::Ok()
+            .content_type("text/css")
+            .body(include_str!("../public/build/bundle.css"))
+    }
+    #[cfg(debug_assertions)]
+    {
+        HttpResponse::NotFound().body("Not found")
+    }
+}
+
 #[actix_web::get("/file_list/")]
 pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse {
     let path = data.path.lock().unwrap();

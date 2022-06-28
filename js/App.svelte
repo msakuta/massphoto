@@ -32,7 +32,7 @@
 <style>
 	p {
 		color: purple;
-		font-family: 'Comic Sans MS', cursive;
+		font-family: 'Times New Roman', cursive;
 		font-size: 2em;
 	}
 </style>
