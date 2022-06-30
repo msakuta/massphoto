@@ -5,7 +5,7 @@ use crate::files::{
     get_global_css, index, load_cache,
 };
 use actix_cors::Cors;
-use actix_web::{error, http, web, App, Error, HttpServer};
+use actix_web::{error, web, App, Error, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
 use rusqlite::Connection;
@@ -23,7 +23,6 @@ struct CacheEntry {
 }
 
 struct MyData {
-    home_path: PathBuf,
     path: Mutex<PathBuf>,
     cache: Mutex<HashMap<PathBuf, CacheEntry>>,
     conn: Mutex<Connection>,
@@ -106,7 +105,6 @@ async fn run() -> anyhow::Result<()> {
     load_cache(&mut cache, &conn, &Path::new(&args.path))?;
 
     let data = web::Data::new(MyData {
-        home_path: canonicalize(PathBuf::from(&args.path))?,
         path: Mutex::new(canonicalize(PathBuf::from(args.path))?),
         cache: Mutex::new(cache),
         conn: Mutex::new(conn),
@@ -118,7 +116,7 @@ async fn run() -> anyhow::Result<()> {
         let cors = Cors::default()
             // .allowed_origin("http://localhost:8080/")
             .allowed_methods(vec!["GET", "POST"])
-            .allowed_header(http::header::CONTENT_TYPE)
+            .allowed_header(actix_web::http::header::CONTENT_TYPE)
             .max_age(3600);
         #[cfg(debug_assertions)]
         let cors = Cors::permissive();

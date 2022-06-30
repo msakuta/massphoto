@@ -11,12 +11,9 @@ actix-files = "0.6.0"
 actix-cors = "0.6.1"
 anyhow = "1.0.51"
 futures-util = "0.3.14"
-svg = "0.10.0"
 image = "0.24.1"
 path-slash = "0.1.4"
-handlebars = "4.1.0"
 serde_json = "1.0.64"
-rand = "0.8.5"
 rusqlite = { version = "0.27.0", features = ["bundled"] }
 dunce = "1.0.2"
 clap = { version = "3.1.6", features = ["derive"] }

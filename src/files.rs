@@ -3,7 +3,6 @@ mod load_cache;
 
 use crate::MyData;
 use actix_web::{web, HttpResponse};
-use handlebars::Handlebars;
 use serde_json::{json, Value};
 use std::{
     ffi::OsStr,
@@ -101,19 +100,7 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
     (dirs, files, has_any_video)
 }
 
-pub(crate) async fn index(data: web::Data<MyData>) -> HttpResponse {
-    let reg = Handlebars::new();
-
-    #[cfg(debug_assertions)]
-    let html = reg
-        .render_template(
-            include_str!("../static/templates/index.html"),
-            &json!({
-                "THUMBNAIL_SIZE": THUMBNAIL_SIZE,
-            }),
-        )
-        .unwrap();
-    #[cfg(not(debug_assertions))]
+pub(crate) async fn index() -> HttpResponse {
     let html = include_str!("../public/index.html");
 
     HttpResponse::Ok().content_type("text/html").body(html)
@@ -234,26 +221,4 @@ pub(crate) fn image_first(path: &Path) -> Option<PathBuf> {
             }
         })
         .map(|entry| entry.path())
-}
-
-pub(crate) fn dir_list(path: &Path) -> anyhow::Result<Vec<PathBuf>> {
-    let parent = path
-        .parent()
-        .ok_or_else(|| anyhow::anyhow!("No parent directory"))?;
-
-    Ok(fs::read_dir(parent)
-        .unwrap()
-        .filter_map(|res| {
-            res.map(|e| {
-                let path = e.path();
-                if path.is_dir() {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-            .ok()
-            .flatten()
-        })
-        .collect())
 }
