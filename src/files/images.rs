@@ -1,14 +1,14 @@
 use super::THUMBNAIL_SIZE;
 use crate::{map_err, CacheEntry, MyData};
 use actix_files::NamedFile;
-use actix_web::{error, web, HttpRequest, HttpResponse, Result};
+use actix_web::{error, http::header::LastModified, web, HttpRequest, HttpResponse, Result};
 use image::{io::Reader as ImageReader, ImageOutputFormat};
 
 use std::{
     fs,
     io::Cursor,
     path::{Path, PathBuf},
-    time::SystemTime,
+    time::{Duration, SystemTime},
 };
 
 pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
@@ -34,6 +34,15 @@ pub(crate) async fn get_file_thumb(
         .join(path);
     println!("Opening {:?}", abs_path);
 
+    let result = |out, modified| {
+        let mut builder = HttpResponse::Ok();
+        builder.content_type("image/jpg");
+        if let Some(modified) = unix_to_system_time(modified) {
+            builder.insert_header(LastModified(modified.into()));
+        }
+        Ok(builder.body(out))
+    };
+
     if let Some(entry) = data.cache.lock().map_err(map_err)?.get(&abs_path) {
         // Defaults true because some filesystems do not support file modified dates. I don't know such a
         // filesystem, but Rust documentation says so.
@@ -41,9 +50,7 @@ pub(crate) async fn get_file_thumb(
             .map(|date| date <= entry.modified)
             .unwrap_or(true)
         {
-            return Ok(HttpResponse::Ok()
-                .content_type("image/jpg")
-                .body(entry.data.clone()));
+            return result(entry.data.clone(), entry.modified);
         } else {
             println!("Found thumbnail cache in db, but it is older than the file")
         }
@@ -69,7 +76,7 @@ pub(crate) async fn get_file_thumb(
         },
     );
 
-    Ok(HttpResponse::Ok().content_type("image/jpg").body(out))
+    result(out, modified)
 }
 
 /// Return modified date in days since Unix epoch
@@ -78,4 +85,9 @@ pub(crate) fn get_file_modified(path: &Path) -> anyhow::Result<f64> {
     let modified = meta.modified()?;
     let unix_time = modified.duration_since(SystemTime::UNIX_EPOCH)?;
     Ok(unix_time.as_millis() as f64 / 1000. / 3600. / 24.)
+}
+
+/// Return modified date in days since Unix epoch
+pub(crate) fn unix_to_system_time(unix: f64) -> Option<SystemTime> {
+    SystemTime::UNIX_EPOCH.checked_add(Duration::new((unix * 3600. * 24.) as u64, 0))
 }
