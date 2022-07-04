@@ -66,6 +66,7 @@ implement_static_bytes!(get_home_icon, "../assets/home.png");
 implement_static_bytes!(get_up_icon, "../assets/up.png");
 implement_static_bytes!(get_left_icon, "../assets/left.png");
 implement_static_bytes!(get_right_icon, "../assets/right.png");
+implement_static_bytes!(get_directory_icon, "../assets/directory.png");
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -136,6 +137,7 @@ async fn run() -> anyhow::Result<()> {
             .route("/up.png", web::get().to(get_up_icon))
             .route("/left.png", web::get().to(get_left_icon))
             .route("/right.png", web::get().to(get_right_icon))
+            .route("/directory.png", web::get().to(get_directory_icon))
     })
     .bind((args.host, args.port))?
     .run()

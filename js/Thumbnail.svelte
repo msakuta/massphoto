@@ -41,11 +41,18 @@
     function contextmenu(event) {
         event.preventDefault();
     }
+
+    function dirStyle() {
+        if(dir)
+            return `background-image: url(${baseUrl}/directory.png)`;
+        else
+            return "";
+    }
 </script>
 
-<div class="dir showcase">
+<div class="dir showcase" style={dirStyle()}>
     <div class="abs labelText smallText">{dir ? dir.file_count : image.label}</div>
-    <div>
+    <div class={dir ? "smallIcon" : ""}>
         <img class="zoomInt" src={imagePath()}
             on:mouseup={mouseup} on:contextmenu={contextmenu} alt={dir ? dir.image_first : image.basename}>
     </div>
@@ -61,6 +68,7 @@
         margin: 0.1em;
         background-color: #7ff;
         border: solid 2px #077;
+        background-size: 100%;
     }
     .showcase {
         /* width: 20em; */
@@ -85,5 +93,10 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
+    }
+    .smallIcon {
+        padding: 25%;
+        width: 50%;
+        height: 50%;
     }
 </style>

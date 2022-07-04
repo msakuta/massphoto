@@ -87,7 +87,7 @@ pub(crate) fn get_file_modified(path: &Path) -> anyhow::Result<f64> {
     Ok(unix_time.as_millis() as f64 / 1000. / 3600. / 24.)
 }
 
-/// Return modified date in days since Unix epoch
+/// Return modified date from days since Unix epoch
 pub(crate) fn unix_to_system_time(unix: f64) -> Option<SystemTime> {
     SystemTime::UNIX_EPOCH.checked_add(Duration::new((unix * 3600. * 24.) as u64, 0))
 }
