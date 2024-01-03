@@ -1,5 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import { joinPath } from './joinPath';
 
     const dispatch = createEventDispatcher();
 
@@ -8,14 +9,6 @@
     export let rootPath = "";
     export let baseUrl = "";
 
-    function joinPath(root, path){
-        if(root === ""){
-            return path;
-        }
-        else {
-            return root + "/" + path;
-        }
-    }
 
     function imagePath(){
         if(dir){
@@ -27,6 +20,9 @@
             }
         }
         else{
+            if(image.video){
+                return `${baseUrl}/unknown.png`;
+            }
             return `${baseUrl}/thumbs/${joinPath(rootPath, image.path)}`;
         }
     }

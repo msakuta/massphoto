@@ -1,6 +1,8 @@
 <script>
 	import ImageView from './ImageView.svelte';
+	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
+	import { joinPath } from './joinPath';
 
 	const baseUrl = BASE_URL;
 
@@ -48,6 +50,12 @@
 		}
 	}
 
+	function isSelectedVideo(){
+		const found = fileList.find(file => joinPath(rootPath, file.path) === selectedFile);
+		console.log(`found.video: ${found && found.video}`);
+		return found && found.video;
+	}
+
 	window.addEventListener('load', () => loadPage(rootPath));
 </script>
 
@@ -63,7 +71,11 @@
 
 {#if selectedFile !== null}
 <div class="imageContainer">
-	<ImageView imagePath={`${baseUrl}/files/${selectedFile}`} on:defocus={defocus}/>
+	{#if isSelectedVideo()}
+		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}/>
+	{:else}
+		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`} on:defocus={defocus}/>
+	{/if}
 </div>
 {/if}
 
