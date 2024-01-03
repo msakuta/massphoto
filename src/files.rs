@@ -163,7 +163,7 @@ pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse 
         }))
 }
 
-#[actix_web::get("/file_list/{path}")]
+#[actix_web::get("/file_list/{path:.*}")]
 pub(crate) async fn get_file_list(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,
