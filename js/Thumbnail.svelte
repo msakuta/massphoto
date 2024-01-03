@@ -19,7 +19,12 @@
 
     function imagePath(){
         if(dir){
-            return `${baseUrl}/thumbs/${joinPath(rootPath, dir.image_first)}`;
+            if(!dir.image_first){
+                return `${baseUrl}/unknown.png`;
+            }
+            else{
+                return `${baseUrl}/thumbs/${joinPath(rootPath, dir.image_first)}`;
+            }
         }
         else{
             return `${baseUrl}/thumbs/${joinPath(rootPath, image.path)}`;
