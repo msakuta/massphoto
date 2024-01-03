@@ -41,7 +41,9 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
             if path.is_dir() {
                 Some(Entry::Dir {
                     path: path.file_name()?.to_str()?.to_owned(),
-                    image_first: image_first(&path).and_then(|path| path.to_str().map(|s| s.to_owned())),
+                    image_first: image_first(&path).and_then(|image_path| {
+                        image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
+                    }),
                     file_count: file_count(&path),
                 })
             } else if let Some(os_str) = path.extension() {

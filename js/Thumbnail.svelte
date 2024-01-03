@@ -23,7 +23,7 @@
                 return `${baseUrl}/unknown.png`;
             }
             else{
-                return `${baseUrl}/thumbs/${joinPath(rootPath, dir.image_first)}`;
+                return `${baseUrl}/thumbs/${joinPath(rootPath, joinPath(dir.path, dir.image_first))}`;
             }
         }
         else{
@@ -56,7 +56,7 @@
 </script>
 
 <div class="dir showcase" style={dirStyle()}>
-    <div class="abs labelText smallText">{dir ? dir.file_count : image.label}</div>
+    <div class="abs labelText smallText">{dir ? dir.path : image.label}</div>
     <div class={dir ? "smallIcon" : ""}>
         <img class="zoomInt" src={imagePath()}
             on:mouseup={mouseup} on:contextmenu={contextmenu} alt={dir ? dir.image_first : image.basename}>
