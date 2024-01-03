@@ -95,8 +95,8 @@
         object-fit: contain;
     }
     .smallIcon {
-        padding: 25%;
-        width: 50%;
-        height: 50%;
+        padding: 15%;
+        width: 70%;
+        height: 70%;
     }
 </style>

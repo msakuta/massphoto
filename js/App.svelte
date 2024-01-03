@@ -91,12 +91,14 @@
 	}
 
 	.imageContainer {
-		position: fixed;
+		position: static;
 		left: 0;
 		top: 3em;
 		width: 100%;
 		height: 70%;
 		z-index: 100;
+		overflow:hidden;
+		background-color: #afafaf;
 	}
 
 	.path {

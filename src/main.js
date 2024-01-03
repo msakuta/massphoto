@@ -274,7 +274,12 @@ async function loadPage(path){
         imageElem.addEventListener("mouseup", (event) => {
             event.preventDefault();
             if (event.button === 0) {
-                setFocus(image, imageElem);
+                if(image.video){
+                    loadVideo(image.path);
+                }
+                else{
+                    setFocus(image, imageElem);
+                }
             }
             if (event.button === 2){
                 selectImage(imageElem);
