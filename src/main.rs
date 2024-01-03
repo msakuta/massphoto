@@ -23,6 +23,7 @@ struct CacheEntry {
 }
 
 struct MyData {
+    /// The root path of the photoalbum
     path: Mutex<PathBuf>,
     cache: Mutex<HashMap<PathBuf, CacheEntry>>,
     conn: Mutex<Connection>,
@@ -67,6 +68,7 @@ implement_static_bytes!(get_up_icon, "../assets/up.png");
 implement_static_bytes!(get_left_icon, "../assets/left.png");
 implement_static_bytes!(get_right_icon, "../assets/right.png");
 implement_static_bytes!(get_directory_icon, "../assets/directory.png");
+implement_static_bytes!(get_unknown_icon, "../assets/unknown.png");
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -138,6 +140,7 @@ async fn run() -> anyhow::Result<()> {
             .route("/left.png", web::get().to(get_left_icon))
             .route("/right.png", web::get().to(get_right_icon))
             .route("/directory.png", web::get().to(get_directory_icon))
+            .route("/unknown.png", web::get().to(get_unknown_icon))
     })
     .bind((args.host, args.port))?
     .run()
