@@ -50,10 +50,12 @@
 		}
 	}
 
-	function isSelectedVideo(){
+	let isSelectedVideo = false;
+
+	$: {
 		const found = fileList.find(file => joinPath(rootPath, file.path) === selectedFile);
 		console.log(`found.video: ${found && found.video}`);
-		return found && found.video;
+		isSelectedVideo = found && found.video;
 	}
 
 	window.addEventListener('load', () => loadPage(rootPath));
@@ -71,7 +73,7 @@
 
 {#if selectedFile !== null}
 <div class="imageContainer">
-	{#if isSelectedVideo()}
+	{#if isSelectedVideo}
 		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}/>
 	{:else}
 		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`} on:defocus={defocus}/>
@@ -79,8 +81,8 @@
 </div>
 {/if}
 
-<div class="scrollContents">
-	<div class='dirContainer' id="thumbnails" style={selectedFile !== null ? 'top: 70%' : ''}>
+<div class="scrollContents" style={selectedFile !== null ? 'top: 70%' : ''}>
+	<div class='dirContainer' id="thumbnails">
 		{#each dirList as dir (dir.path)}
 			<Thumbnail {dir} {rootPath} {baseUrl} on:setFocus={selectDir}/>
 		{/each}
@@ -99,13 +101,13 @@
 		width: 100%;
 		height: 3em;
 		background-color: rgba(191, 191, 191, 0.75);
-		z-index: 100;
+		z-index: 110;
 	}
 
 	.imageContainer {
-		position: static;
+		position: fixed;
 		left: 0;
-		top: 3em;
+		top: 0;
 		width: 100%;
 		height: 70%;
 		z-index: 100;
@@ -124,6 +126,7 @@
 	}
 
 	.scrollContents {
+		position: relative;
 		margin-top: 3em;
 	}
 
