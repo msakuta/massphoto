@@ -27,6 +27,10 @@
         }
     }
 
+    function imageStyle(){
+        return `background-image: url(${imagePath()})`;
+    }
+
     function mouseup(event) {
         event.preventDefault();
         if (event.button === 0) {
@@ -53,9 +57,9 @@
 
 <div class="dir showcase" style={dirStyle()}>
     <div class="abs labelText smallText">{dir ? dir.path : image.label}</div>
-    <div class={dir ? "smallIcon" : ""}>
-        <img class="zoomInt" src={imagePath()}
-            on:mouseup={mouseup} on:contextmenu={contextmenu} alt={dir ? dir.image_first : image.basename}>
+    <div class={dir ? "smallIcon" : "bigIcon"}>
+        <div class="zoomInt" style={imageStyle()}
+            on:mouseup={mouseup} on:contextmenu={contextmenu} alt={dir ? dir.image_first : image.basename} />
     </div>
 </div>
 
@@ -85,19 +89,29 @@
         text-shadow: 1px 1px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
         overflow-x: hidden;
         pointer-events: none;
+        z-index: 10;
     }
     .smallText {
         font-size: 0.7em;
         pointer-events: none;
     }
     .zoomInt {
+        margin: auto;
         width: 100%;
         height: 100%;
-        object-fit: contain;
+        background-size: contain;
+        background-position: center center;
+        background-repeat: no-repeat;
     }
     .smallIcon {
         padding: 15%;
         width: 70%;
         height: 70%;
+        position: relative;
+    }
+    .bigIcon {
+        width: 100%;
+        height: 100%;
+        position: relative;
     }
 </style>
