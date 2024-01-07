@@ -21,7 +21,7 @@
         }
         else{
             if(image.video){
-                return `${baseUrl}/unknown.png`;
+                return `${baseUrl}/video.png`;
             }
             return `${baseUrl}/thumbs/${joinPath(rootPath, image.path)}`;
         }
