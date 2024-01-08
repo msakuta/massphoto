@@ -54,7 +54,6 @@
 
 	$: {
 		const found = fileList.find(file => joinPath(rootPath, file.path) === selectedFile);
-		console.log(`found.video: ${found && found.video}`);
 		isSelectedVideo = found && found.video;
 	}
 

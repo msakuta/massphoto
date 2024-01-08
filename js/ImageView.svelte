@@ -63,8 +63,6 @@
     function getImageSize(event) {
         let width = event.target.width;
         let height = event.target.height;
-        console.log(`w: ${width}, h: ${height}`);
-        console.log(`cw: ${client.clientWidth}, ch: ${client.clientHeight}`);
         scale = Math.min(client.clientWidth / width, client.clientHeight / height);
     }
 
