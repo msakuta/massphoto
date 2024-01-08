@@ -9,6 +9,8 @@
     $: imageTransform = `translate(${translate[0]}px, ${translate[1]}px) scale(${scale})`;
     let client;
 
+    export let closePath = "";
+    let closeButton;
     export let magnifyPath = "";
     let magnifyButton;
     export let minifyPath = "";
@@ -41,10 +43,6 @@
 
     function mouseup(event) {
         if(event.target === magnifyButton || event.target === minifyButton) return;
-        if(!dragMoved && event.button === 0){
-            dispatch('defocus');
-            event.preventDefault();
-        }
         dragStart = null;
         dragMoved = false;
     }
@@ -73,6 +71,10 @@
         scale = Math.min(client.clientWidth / width, client.clientHeight / height);
     }
 
+    function close(event) {
+        dispatch('defocus');
+    }
+
     function magnify(event) {
         event.preventDefault();
         scale *= 1.2;
@@ -88,8 +90,9 @@
         on:mouseup={mouseup} on:contextmenu={contextmenu} on:mousedown={mousedown} on:mousemove={mousemove} on:mouseleave={mouseleave}>
     <img style="transform: {imageTransform}" class="zoomInt noPointer" src={imagePath} alt={imagePath} on:load={getImageSize}>
     <div class="buttonContainer">
-        <img class="button" bind:this={magnifyButton} src={magnifyPath} alt={magnifyPath} on:click={magnify}>
-        <img class="button" style="top: 48px" bind:this={minifyButton} src={minifyPath} alt={minifyPath} on:click={minify}>
+        <img class="button" bind:this={closeButton} src={closePath} alt="Close" on:click={close}>
+        <img class="button" style="top: 48px" bind:this={magnifyButton} src={magnifyPath} alt="Magnify" on:click={magnify}>
+        <img class="button" style="top: 96px" bind:this={minifyButton} src={minifyPath} alt="Minify" on:click={minify}>
     </div>
 </div>
 

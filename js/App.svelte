@@ -76,6 +76,7 @@
 		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}/>
 	{:else}
 		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`}
+			closePath={`${baseUrl}/close.png`}
 			magnifyPath={`${baseUrl}/magnify.png`}
 			minifyPath={`${baseUrl}/minify.png`}
 			on:defocus={defocus}/>
