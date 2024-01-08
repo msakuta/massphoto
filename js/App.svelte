@@ -127,7 +127,10 @@
 
 	.scrollContents {
 		position: relative;
+		width: 75%;
 		margin-top: 3em;
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.dirContainer {
