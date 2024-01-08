@@ -72,7 +72,7 @@ pub(crate) async fn get_file_thumb(
         CacheEntry {
             new: true,
             modified,
-            comment: None,
+            desc: None,
             data: out.clone(),
         },
     );
@@ -104,13 +104,13 @@ pub(crate) async fn get_image_comment(
     let Some(entry) = cache.get(&abs_path) else {
         return Err(error::ErrorNotFound("Entry not found"));
     };
-    let Some(comment) = &entry.comment else {
-        return Err(error::ErrorNotFound("Comment not found"));
+    let Some(desc) = &entry.desc else {
+        return Err(error::ErrorNotFound("Desc not found"));
     };
 
     Ok(HttpResponse::Ok()
         .content_type("text/plain")
-        .body(comment.clone()))
+        .body(desc.clone()))
 }
 
 pub(crate) async fn set_image_comment(
@@ -129,12 +129,12 @@ pub(crate) async fn set_image_comment(
         }
         body.extend_from_slice(&chunk);
     }
-    let comment = std::str::from_utf8(&body).unwrap();
+    let desc = std::str::from_utf8(&body).unwrap();
 
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let abs_path = data.path.lock().map_err(map_err)?.join(&path);
 
-    println!("Comment posted on {path:?} ({abs_path:?}): {comment}");
+    println!("Comment posted on {path:?} ({abs_path:?}): {desc}");
 
     let mut cache = data.cache.lock().map_err(map_err)?;
 
@@ -144,11 +144,11 @@ pub(crate) async fn set_image_comment(
         CacheEntry {
             new: true,
             modified: 0.,
-            comment: Some(comment.to_string()),
+            desc: Some(desc.to_string()),
             data: vec![],
         }
     });
-    entry.comment = Some(comment.to_string());
+    entry.desc = Some(desc.to_string());
 
     let mut db = data.conn.lock().unwrap();
 
@@ -156,14 +156,14 @@ pub(crate) async fn set_image_comment(
 
     let updated = if inserted {
         tx.execute(
-            "INSERT INTO file (path, modified, comment) VALUES (?1, ?2, ?3)",
-            rusqlite::params![abs_path.to_str(), entry.modified, entry.comment],
+            "INSERT INTO file (path, modified, desc) VALUES (?1, ?2, ?3)",
+            rusqlite::params![abs_path.to_str(), entry.modified, entry.desc],
         )
         .map_err(map_err)?
     } else {
         tx.execute(
-            "UPDATE file SET comment = ?2 WHERE path = ?1",
-            rusqlite::params![abs_path.to_str(), entry.comment],
+            "UPDATE file SET desc = ?2 WHERE path = ?1",
+            rusqlite::params![abs_path.to_str(), entry.desc],
         )
         .map_err(map_err)?
     };

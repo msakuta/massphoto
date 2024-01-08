@@ -20,7 +20,7 @@ use std::{
 struct CacheEntry {
     new: bool,
     modified: f64,
-    comment: Option<String>,
+    desc: Option<String>,
     data: Vec<u8>,
 }
 
@@ -113,7 +113,7 @@ async fn run() -> anyhow::Result<()> {
             "CREATE table file (
             path TEXT PRIMARY KEY,
             modified REAL,
-            comment TEXT,
+            desc TEXT,
             data BLOB
         )",
             [],
