@@ -9,6 +9,8 @@
     $: imageTransform = `translate(${translate[0]}px, ${translate[1]}px) scale(${scale})`;
     let client;
 
+    export let magnifyPath = "";
+
     function applyZoom(event){
         if(focus === null) return true;
         event.preventDefault();
@@ -71,6 +73,7 @@
 <div class="container" bind:this={client} on:wheel={applyZoom}
         on:mouseup={mouseup} on:contextmenu={contextmenu} on:mousedown={mousedown} on:mousemove={mousemove} on:mouseleave={mouseleave}>
     <img style="transform: {imageTransform}" class="zoomInt noPointer" src={imagePath} alt={imagePath} on:load={getImageSize}>
+    <img class="button" src={magnifyPath} alt={magnifyPath} on:load={getImageSize}>
 </div>
 
 <style>
@@ -85,5 +88,10 @@
     }
     .noPointer {
         pointer-events: none;
+    }
+    .button {
+        position: absolute;
+        left: 0;
+        top: 64px;
     }
 </style>
