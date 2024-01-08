@@ -2,7 +2,7 @@ mod files;
 
 use crate::files::{
     code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
-    get_global_css, index, load_cache,
+    get_global_css, get_image_comment, index, load_cache, set_image_comment,
 };
 use actix_cors::Cors;
 use actix_web::{error, web, App, Error, HttpServer};
@@ -16,9 +16,11 @@ use std::{
     time::Instant,
 };
 
+#[derive(Debug)]
 struct CacheEntry {
     new: bool,
     modified: f64,
+    comment: Option<String>,
     data: Vec<u8>,
 }
 
@@ -103,6 +105,7 @@ async fn run() -> anyhow::Result<()> {
             "CREATE table file (
             path TEXT PRIMARY KEY,
             modified REAL,
+            comment TEXT,
             data BLOB
         )",
             [],
@@ -140,6 +143,8 @@ async fn run() -> anyhow::Result<()> {
             .service(get_file_list)
             .service(get_global_css)
             .service(get_bundle_css)
+            .route("/comments/{file:.*}", web::get().to(get_image_comment))
+            .route("/comments/{file:.*}", web::post().to(set_image_comment))
             .route("/thumbs/{file:.*}", web::get().to(get_file_thumb))
             .route("/files/{file:.*}", web::get().to(get_file))
             .route("/home.png", web::get().to(get_home_icon))

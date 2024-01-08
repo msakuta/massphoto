@@ -69,10 +69,21 @@
 
 	function onKeyDown(evt) {
 		switch(evt.keyCode) {
-			case 37: onPrevImage(); break;
-			case 39: onNextImage(); break;
+			case 37: evt.preventDefault(); onPrevImage(); break;
+			case 39: evt.preventDefault(); onNextImage(); break;
 		}
 	}
+
+	async function onSetComment(evt) {
+		const res = await fetch(`${baseUrl}/comments/${evt.detail.path}`, {
+			method: "POST",
+			body: evt.detail.comment,
+		});
+		const text = await res.text();
+		console.log(`setComment res: ${text}`);
+	}
+
+	$: commentUrl = `${baseUrl}/comments/${selectedFile}`;
 
 	window.addEventListener('load', () => loadPage(rootPath));
 </script>
@@ -93,10 +104,13 @@
 		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}/>
 	{:else}
 		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`}
+			imageRelPath={selectedFile}
+			{commentUrl}
 			buttonImageBasePath={`${baseUrl}`}
 			on:defocus={defocus}
 			on:prev={onPrevImage}
-			on:next={onNextImage}/>
+			on:next={onNextImage}
+			on:setComment={onSetComment}/>
 	{/if}
 </div>
 {/if}
@@ -161,4 +175,4 @@
 	}
 </style>
 
-<svelte:window on:keydown|preventDefault={onKeyDown} />
+<svelte:window on:keydown={onKeyDown} />

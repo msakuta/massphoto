@@ -11,7 +11,7 @@ use std::{
 };
 
 pub(crate) use self::{
-    images::{get_file, get_file_thumb},
+    images::{get_file, get_file_thumb, get_image_comment, set_image_comment},
     load_cache::load_cache,
 };
 

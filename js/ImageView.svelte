@@ -1,5 +1,5 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, tick } from 'svelte';
 
     const dispatch = createEventDispatcher();
 
@@ -8,6 +8,8 @@
     let translate = [0, 0];
     $: imageTransform = `translate(${translate[0]}px, ${translate[1]}px) scale(${scale})`;
     let client;
+
+    export let imageRelPath = "";
 
     export let buttonImageBasePath = "";
     let closePath = `${buttonImageBasePath}/close.png`;
@@ -22,6 +24,38 @@
     let prevButton;
     let rightAnglePath = `${buttonImageBasePath}/rightAngle.png`;
     let nextButton;
+
+    let commentDiv;
+    let commentEdit;
+
+    let commentEditMode = false;
+    let commentValue = "Hello there";
+    let commentVisible = false;
+
+    export let commentUrl = "";
+    $: getComment(commentUrl);
+    async function getComment(commentUrl) {
+        if (commentUrl !== null) {
+            const res = await fetch(commentUrl);
+            switch (res.status) {
+                case 200:
+                    commentValue = await res.text();
+                    commentVisible = true;
+                    break;
+                case 404:
+                    commentValue = null;
+                    commentVisible = false;
+                    break;
+                default:
+                    commentValue = "Unknown error";
+                    commentVisible = true;
+                    break;
+            }
+        }
+        else{
+            commentVisible = false;
+        }
+    }
 
     function applyZoom(event){
         if(focus === null) return true;
@@ -40,7 +74,7 @@
         scale = Math.min(Math.max(0.1, scale), 20);
     }
 
-    let allButtons = [closeButton, magnifyButton, minifyButton, fitButton];
+    let allButtons = [closeButton, magnifyButton, minifyButton, fitButton, commentDiv, commentEdit];
 
     let dragStart = null;
     let dragMoved = false;
@@ -103,6 +137,24 @@
     function next() {
         dispatch('next', imagePath);
     }
+
+    async function enterCommentEditMode() {
+        commentEditMode = true;
+        await tick();
+        commentEdit.focus();
+    }
+
+    async function onCommentKeyDown(evt) {
+        if (evt.keyCode === 13) {
+            dispatch('setComment', {path: imageRelPath, comment: commentValue});
+            commentEditMode = false;
+            evt.preventDefault();
+        }
+    }
+
+    function focusout() {
+        commentEditMode = false;
+    }
 </script>
 
 <div class="container" bind:this={client} on:wheel={applyZoom}
@@ -116,6 +168,11 @@
     </div>
     <img class="button prevButton" bind:this={prevButton} src={leftAnglePath} alt="Prev" on:click={dispatch('prev', imagePath)}>
     <img class="button nextButton" bind:this={nextButton} src={rightAnglePath} alt="Next" on:click={next}>
+    {#if commentEditMode}
+        <textarea class="textPosition" bind:this={commentEdit} on:keydown={onCommentKeyDown} on:focusout={focusout} bind:value={commentValue}></textarea>
+    {:else if commentVisible}
+        <div class="textPosition commentShow" bind:this={commentDiv} on:click={enterCommentEditMode}>{commentValue}</div>
+    {/if}
 </div>
 
 <style>
@@ -165,5 +222,19 @@
         top: 0;
         bottom: 0;
         margin: auto;
+    }
+
+    .textPosition {
+        position: absolute;
+        width: 70%;
+        height: 60px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: auto;
+    }
+
+    .commentShow {
+        background-color: rgba(255, 255, 255, 0.75);
     }
 </style>

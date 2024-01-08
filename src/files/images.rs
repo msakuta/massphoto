@@ -72,6 +72,7 @@ pub(crate) async fn get_file_thumb(
         CacheEntry {
             new: true,
             modified,
+            comment: None,
             data: out.clone(),
         },
     );
@@ -90,4 +91,84 @@ pub(crate) fn get_file_modified(path: &Path) -> anyhow::Result<f64> {
 /// Return modified date from days since Unix epoch
 pub(crate) fn unix_to_system_time(unix: f64) -> Option<SystemTime> {
     SystemTime::UNIX_EPOCH.checked_add(Duration::new((unix * 3600. * 24.) as u64, 0))
+}
+
+pub(crate) async fn get_image_comment(
+    data: web::Data<MyData>,
+    req: HttpRequest,
+) -> Result<HttpResponse> {
+    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
+
+    let cache = data.cache.lock().map_err(map_err)?;
+    let Some(entry) = cache.get(&abs_path) else {
+        return Err(error::ErrorNotFound("Entry not found"));
+    };
+    let Some(comment) = &entry.comment else {
+        return Err(error::ErrorNotFound("Comment not found"));
+    };
+
+    Ok(HttpResponse::Ok().body(comment.clone()))
+}
+
+pub(crate) async fn set_image_comment(
+    data: web::Data<MyData>,
+    mut payload: web::Payload,
+    req: HttpRequest,
+) -> Result<HttpResponse> {
+    use futures_util::stream::StreamExt;
+    const MAX_SIZE: usize = 1024 * 100;
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk?;
+        // limit max size of in-memory payload
+        if (body.len() + chunk.len()) > MAX_SIZE {
+            return Err(error::ErrorBadRequest("overflow"));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    let comment = std::str::from_utf8(&body).unwrap();
+
+    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
+
+    println!("Comment posted on {path:?} ({abs_path:?}): {comment}");
+
+    let mut cache = data.cache.lock().map_err(map_err)?;
+
+    let mut inserted = false;
+    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
+        inserted = true;
+        CacheEntry {
+            new: true,
+            modified: 0.,
+            comment: Some(comment.to_string()),
+            data: vec![],
+        }
+    });
+    entry.comment = Some(comment.to_string());
+
+    let mut db = data.conn.lock().unwrap();
+
+    let tx = db.transaction().map_err(map_err)?;
+
+    let updated = if inserted {
+        tx.execute(
+            "INSERT INTO file (path, modified, comment) VALUES (?1, ?2, ?3)",
+            rusqlite::params![abs_path.to_str(), entry.modified, entry.comment],
+        )
+        .map_err(map_err)?
+    } else {
+        tx.execute(
+            "UPDATE file SET comment = ?2 WHERE path = ?1",
+            rusqlite::params![abs_path.to_str(), entry.comment],
+        )
+        .map_err(map_err)?
+    };
+
+    tx.commit().map_err(map_err)?;
+
+    println!("inserted: {inserted}, updated: {updated}");
+
+    Ok(HttpResponse::Ok().body("ok"))
 }
