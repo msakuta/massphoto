@@ -51,6 +51,13 @@ struct Args {
         help = "The host address to listen to. By default, only the localhost can access."
     )]
     host: String,
+    #[clap(
+        short,
+        long,
+        default_value = "http://localhost:8808",
+        help = "The allowed Access-Control-Allow-Origin value."
+    )]
+    cors_origin: String,
 }
 
 fn map_err(err: impl ToString) -> Error {
@@ -127,7 +134,7 @@ async fn run() -> anyhow::Result<()> {
     let result = HttpServer::new(move || {
         #[cfg(not(debug_assertions))]
         let cors = Cors::default()
-            // .allowed_origin("http://localhost:8080/")
+            .allowed_origin(&args.cors_origin)
             .allowed_methods(vec!["GET", "POST"])
             .allowed_header(actix_web::http::header::CONTENT_TYPE)
             .max_age(3600);

@@ -108,7 +108,9 @@ pub(crate) async fn get_image_comment(
         return Err(error::ErrorNotFound("Comment not found"));
     };
 
-    Ok(HttpResponse::Ok().body(comment.clone()))
+    Ok(HttpResponse::Ok()
+        .content_type("text/plain")
+        .body(comment.clone()))
 }
 
 pub(crate) async fn set_image_comment(
@@ -170,5 +172,5 @@ pub(crate) async fn set_image_comment(
 
     println!("inserted: {inserted}, updated: {updated}");
 
-    Ok(HttpResponse::Ok().body("ok"))
+    Ok(HttpResponse::Ok().content_type("text/plain").body("ok"))
 }

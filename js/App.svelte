@@ -77,6 +77,10 @@
 	async function onSetComment(evt) {
 		const res = await fetch(`${baseUrl}/comments/${evt.detail.path}`, {
 			method: "POST",
+			mode: "cors",
+			headers: {
+				"Content-Type": "text/plain"
+			},
 			body: evt.detail.comment,
 		});
 		const text = await res.text();
