@@ -38,10 +38,18 @@ but I doubt even if it's necessary since cached thumbnails are usually
 much smaller than the original files.
 
 
+## Non-goals
+
+* Fully featured CMS. It's tempting to be ambitious but it would take forever to finish.
+* Large scale service. This software is designed for few dozen active users at maximum. It would require dedicated DBMS and would be more complicated than desired.
+* Secure system. Do not keep sensitive data in this server, unless you limit access only from internal network.
+
+
 ## TODOs
 
 * [ ] Access control per directory
-* [ ] Video playback support (mp4)
+* [ ] Description for each image
+* [x] Video playback support (mp4)
 * [ ] Periodic update of new file cache
 * [ ] Periodic cleanup of outdated cache
 
