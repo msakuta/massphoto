@@ -55,7 +55,7 @@ struct Args {
         short,
         long,
         default_value = "http://localhost:8808",
-        help = "The allowed Access-Control-Allow-Origin value."
+        help = "The allowed Access-Control-Allow-Origin value. Set \"*\" to allow any origin."
     )]
     cors_origin: String,
 }
@@ -134,11 +134,17 @@ async fn run() -> anyhow::Result<()> {
     let data_copy = data.clone();
     let result = HttpServer::new(move || {
         #[cfg(not(debug_assertions))]
-        let cors = Cors::default()
-            .allowed_origin(&args.cors_origin)
-            .allowed_methods(vec!["GET", "POST"])
-            .allowed_header(actix_web::http::header::CONTENT_TYPE)
-            .max_age(3600);
+        let cors = {
+            let mut cors = Cors::default();
+            cors = if args.cors_origin == "*" {
+                cors.allow_any_origin()
+            } else {
+                cors.allowed_origin(&args.cors_origin)
+            };
+            cors.allowed_methods(vec!["GET", "POST"])
+                .allowed_header(actix_web::http::header::CONTENT_TYPE)
+                .max_age(3600)
+        };
         #[cfg(debug_assertions)]
         let cors = Cors::permissive();
 
