@@ -3,7 +3,6 @@ mod load_cache;
 
 use crate::MyData;
 use actix_web::{web, HttpResponse};
-use handlebars::Handlebars;
 use serde_json::{json, Value};
 use std::{
     ffi::OsStr,
@@ -12,7 +11,7 @@ use std::{
 };
 
 pub(crate) use self::{
-    images::{get_file, get_file_thumb},
+    images::{get_file, get_file_thumb, get_image_comment, set_image_comment},
     load_cache::load_cache,
 };
 
@@ -42,7 +41,9 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
             if path.is_dir() {
                 Some(Entry::Dir {
                     path: path.file_name()?.to_str()?.to_owned(),
-                    image_first: image_first(&path).and_then(|path| path.to_str().map(|s| s.to_owned())),
+                    image_first: image_first(&path).and_then(|image_path| {
+                        image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
+                    }),
                     file_count: file_count(&path),
                 })
             } else if let Some(os_str) = path.extension() {
@@ -101,19 +102,54 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
     (dirs, files, has_any_video)
 }
 
-pub(crate) async fn index(data: web::Data<MyData>) -> HttpResponse {
-    let path = data.path.lock().unwrap();
-    let reg = Handlebars::new();
+pub(crate) async fn index() -> HttpResponse {
+    let html = include_str!("../public/index.html");
 
-    HttpResponse::Ok().content_type("text/html").body(
-        reg.render_template(
-            include_str!("../static/templates/index.html"),
-            &json!({
-                "THUMBNAIL_SIZE": THUMBNAIL_SIZE,
-            }),
-        )
-        .unwrap(),
-    )
+    HttpResponse::Ok().content_type("text/html").body(html)
+}
+
+#[cfg(debug_assertions)]
+#[actix_web::get("/main.js")]
+pub(crate) async fn code() -> actix_web::Result<HttpResponse> {
+    use actix_web::error;
+
+    Err(error::ErrorInternalServerError(
+        "Not implemented. Use `npm run dev` to run the frontend dev server.",
+    ))
+}
+
+#[cfg(not(debug_assertions))]
+#[actix_web::get("/build/bundle.js")]
+pub(crate) async fn code() -> &'static str {
+    include_str!("../public/build/bundle.js")
+}
+
+#[actix_web::get("/global.css")]
+pub(crate) async fn get_global_css() -> HttpResponse {
+    #[cfg(not(debug_assertions))]
+    {
+        HttpResponse::Ok()
+            .content_type("text/css")
+            .body(include_str!("../public/global.css"))
+    }
+    #[cfg(debug_assertions)]
+    {
+        HttpResponse::NotFound().body("Not found")
+    }
+}
+
+#[actix_web::get("/build/bundle.css")]
+pub(crate) async fn get_bundle_css() -> HttpResponse {
+    #[cfg(not(debug_assertions))]
+    {
+        HttpResponse::Ok()
+            .content_type("text/css")
+            .body(include_str!("../public/build/bundle.css"))
+    }
+    #[cfg(debug_assertions)]
+    {
+        HttpResponse::NotFound().body("Not found")
+    }
 }
 
 #[actix_web::get("/file_list/")]
@@ -131,7 +167,7 @@ pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse 
         }))
 }
 
-#[actix_web::get("/file_list/{path}")]
+#[actix_web::get("/file_list/{path:.*}")]
 pub(crate) async fn get_file_list(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,
@@ -191,26 +227,4 @@ pub(crate) fn image_first(path: &Path) -> Option<PathBuf> {
             }
         })
         .map(|entry| entry.path())
-}
-
-pub(crate) fn dir_list(path: &Path) -> anyhow::Result<Vec<PathBuf>> {
-    let parent = path
-        .parent()
-        .ok_or_else(|| anyhow::anyhow!("No parent directory"))?;
-
-    Ok(fs::read_dir(parent)
-        .unwrap()
-        .filter_map(|res| {
-            res.map(|e| {
-                let path = e.path();
-                if path.is_dir() {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-            .ok()
-            .flatten()
-        })
-        .collect())
 }

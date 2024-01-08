@@ -1,8 +1,10 @@
 mod files;
 
 use crate::files::{
-    get_file, get_file_list, get_file_list_root, get_file_thumb, index, load_cache,
+    code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
+    get_global_css, get_image_comment, index, load_cache, set_image_comment,
 };
+use actix_cors::Cors;
 use actix_web::{error, web, App, Error, HttpServer};
 use clap::Parser;
 use dunce::canonicalize;
@@ -14,14 +16,16 @@ use std::{
     time::Instant,
 };
 
+#[derive(Debug)]
 struct CacheEntry {
     new: bool,
     modified: f64,
+    comment: Option<String>,
     data: Vec<u8>,
 }
 
 struct MyData {
-    home_path: PathBuf,
+    /// The root path of the photoalbum
     path: Mutex<PathBuf>,
     cache: Mutex<HashMap<PathBuf, CacheEntry>>,
     conn: Mutex<Connection>,
@@ -36,7 +40,7 @@ struct Args {
     #[clap(
         short,
         long,
-        default_value = "8082",
+        default_value = "8808",
         help = "The port number to listen to."
     )]
     port: u16,
@@ -47,6 +51,13 @@ struct Args {
         help = "The host address to listen to. By default, only the localhost can access."
     )]
     host: String,
+    #[clap(
+        short,
+        long,
+        default_value = "http://localhost:8808",
+        help = "The allowed Access-Control-Allow-Origin value."
+    )]
+    cors_origin: String,
 }
 
 fn map_err(err: impl ToString) -> Error {
@@ -65,6 +76,16 @@ implement_static_bytes!(get_home_icon, "../assets/home.png");
 implement_static_bytes!(get_up_icon, "../assets/up.png");
 implement_static_bytes!(get_left_icon, "../assets/left.png");
 implement_static_bytes!(get_right_icon, "../assets/right.png");
+implement_static_bytes!(get_directory_icon, "../assets/directory.png");
+implement_static_bytes!(get_video_icon, "../assets/video.png");
+implement_static_bytes!(get_close_icon, "../assets/close.png");
+implement_static_bytes!(get_magnify_icon, "../assets/magnify.png");
+implement_static_bytes!(get_minify_icon, "../assets/minify.png");
+implement_static_bytes!(get_fit_icon, "../assets/fit.png");
+implement_static_bytes!(get_comment_icon, "../assets/comment.png");
+implement_static_bytes!(get_left_angle_icon, "../assets/leftAngle.png");
+implement_static_bytes!(get_right_angle_icon, "../assets/rightAngle.png");
+implement_static_bytes!(get_unknown_icon, "../assets/unknown.png");
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -92,6 +113,7 @@ async fn run() -> anyhow::Result<()> {
             "CREATE table file (
             path TEXT PRIMARY KEY,
             modified REAL,
+            comment TEXT,
             data BLOB
         )",
             [],
@@ -104,7 +126,6 @@ async fn run() -> anyhow::Result<()> {
     load_cache(&mut cache, &conn, &Path::new(&args.path))?;
 
     let data = web::Data::new(MyData {
-        home_path: canonicalize(PathBuf::from(&args.path))?,
         path: Mutex::new(canonicalize(PathBuf::from(args.path))?),
         cache: Mutex::new(cache),
         conn: Mutex::new(conn),
@@ -112,21 +133,42 @@ async fn run() -> anyhow::Result<()> {
     });
     let data_copy = data.clone();
     let result = HttpServer::new(move || {
+        #[cfg(not(debug_assertions))]
+        let cors = Cors::default()
+            .allowed_origin(&args.cors_origin)
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_header(actix_web::http::header::CONTENT_TYPE)
+            .max_age(3600);
+        #[cfg(debug_assertions)]
+        let cors = Cors::permissive();
+
         App::new()
             .app_data(data.clone())
+            .wrap(cors)
             .route("/", web::get().to(index))
-            .route(
-                "/main.js",
-                web::get().to(|| async { include_str!("main.js") }),
-            )
+            .service(code)
             .service(get_file_list_root)
             .service(get_file_list)
+            .service(get_global_css)
+            .service(get_bundle_css)
+            .route("/comments/{file:.*}", web::get().to(get_image_comment))
+            .route("/comments/{file:.*}", web::post().to(set_image_comment))
             .route("/thumbs/{file:.*}", web::get().to(get_file_thumb))
             .route("/files/{file:.*}", web::get().to(get_file))
             .route("/home.png", web::get().to(get_home_icon))
             .route("/up.png", web::get().to(get_up_icon))
             .route("/left.png", web::get().to(get_left_icon))
             .route("/right.png", web::get().to(get_right_icon))
+            .route("/directory.png", web::get().to(get_directory_icon))
+            .route("/video.png", web::get().to(get_video_icon))
+            .route("/close.png", web::get().to(get_close_icon))
+            .route("/magnify.png", web::get().to(get_magnify_icon))
+            .route("/minify.png", web::get().to(get_minify_icon))
+            .route("/fit.png", web::get().to(get_fit_icon))
+            .route("/comment.png", web::get().to(get_comment_icon))
+            .route("/leftAngle.png", web::get().to(get_left_angle_icon))
+            .route("/rightAngle.png", web::get().to(get_right_angle_icon))
+            .route("/unknown.png", web::get().to(get_unknown_icon))
     })
     .bind((args.host, args.port))?
     .run()

@@ -44,3 +44,51 @@ much smaller than the original files.
 * [ ] Video playback support (mp4)
 * [ ] Periodic update of new file cache
 * [ ] Periodic cleanup of outdated cache
+
+## Prerequsites
+
+* Rust 1.74
+* npm 8.3.1
+
+## How to run dev server
+
+Run the server in debug mode
+
+```
+cargo r -- <path_to_albums_dir>
+```
+
+and run the frontend
+
+```
+npm ci
+npm run dev
+```
+
+Now you can browse http://localhost:8080/
+
+In this mode, the frontend source is watched and hot reloaded as they are edited.
+However, backend Rust code won't be recompiled.
+You could use the `cargo watch` command like below, but it will recompile by any file edits, including the frontend.
+
+```
+cargo watch -x "run <path_to_albums_dir>"
+```
+
+
+## How to build the production server
+
+First, build the frontend bundle:
+
+```
+npm run build
+```
+
+and build the server application:
+
+```
+cargo b --release
+```
+
+It will produce an executable in target/release including the frontend source code baked into binary.
+You can bring it anywhere and simply run it.

@@ -17,6 +17,7 @@ pub(crate) fn load_cache(
     struct File {
         path: String,
         modified: f64,
+        comment: Option<String>,
         data: Vec<u8>,
     }
 
@@ -30,12 +31,14 @@ pub(crate) fn load_cache(
         return Ok(());
     };
 
-    let mut stmt = conn.prepare("SELECT path, modified, data FROM file WHERE path LIKE ?1")?;
+    let mut stmt =
+        conn.prepare("SELECT path, modified, comment, data FROM file WHERE path LIKE ?1")?;
     let file_iter = stmt.query_map([format!("{}%", abs_path)], |row| {
         Ok(File {
             path: row.get(0)?,
             modified: row.get(1)?,
-            data: row.get(2)?,
+            comment: row.get(2).ok(),
+            data: row.get(3)?,
         })
     })?;
 
@@ -46,6 +49,7 @@ pub(crate) fn load_cache(
             CacheEntry {
                 new: false,
                 modified: file.modified,
+                comment: file.comment,
                 data: file.data,
             },
         );
