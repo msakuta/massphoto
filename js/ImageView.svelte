@@ -24,6 +24,8 @@
     let prevButton;
     let rightAnglePath = `${buttonImageBasePath}/rightAngle.png`;
     let nextButton;
+    let commentButtonPath = `${buttonImageBasePath}/comment.png`;
+    let commentButton;
 
     let commentDiv;
     let commentEdit;
@@ -35,6 +37,7 @@
     export let commentUrl = "";
     $: getComment(commentUrl);
     async function getComment(commentUrl) {
+        commentEditMode = false;
         if (commentUrl !== null) {
             const res = await fetch(commentUrl);
             switch (res.status) {
@@ -43,7 +46,7 @@
                     commentVisible = true;
                     break;
                 case 404:
-                    commentValue = null;
+                    commentValue = "";
                     commentVisible = false;
                     break;
                 default:
@@ -145,14 +148,23 @@
     }
 
     async function onCommentKeyDown(evt) {
-        if (evt.keyCode === 13) {
-            dispatch('setComment', {path: imageRelPath, comment: commentValue});
-            commentEditMode = false;
-            evt.preventDefault();
+        switch (evt.keyCode) {
+            case 13:
+                dispatch('setComment', {path: imageRelPath, comment: commentValue});
+                commentEditMode = false;
+                evt.preventDefault();
+                break;
+            case 37: evt.stopPropagation(); break;
+            case 39: evt.stopPropagation(); break;
         }
     }
 
     function focusout() {
+        commentEditMode = false;
+    }
+
+    function toggleComment() {
+        commentVisible = !commentVisible;
         commentEditMode = false;
     }
 </script>
@@ -166,6 +178,7 @@
         <img class="button barButton" style="top: 96px" bind:this={minifyButton} src={minifyPath} alt="Minify" on:click={minify}>
         <img class="button barButton" style="top: 144px" bind:this={fitButton} src={fitPath} alt="Fit" on:click={fit}>
     </div>
+    <img class="button commentButton" bind:this={commentButton} src={commentButtonPath} alt="Comment" on:click={toggleComment}>
     <img class="button prevButton" bind:this={prevButton} src={leftAnglePath} alt="Prev" on:click={dispatch('prev', imagePath)}>
     <img class="button nextButton" bind:this={nextButton} src={rightAnglePath} alt="Next" on:click={next}>
     {#if commentEditMode}
@@ -206,6 +219,12 @@
         position: absolute;
         left: 0;
         top: 0;
+    }
+
+    .commentButton {
+        position: absolute;
+        left: 0;
+        bottom: 0;
     }
 
     .prevButton {

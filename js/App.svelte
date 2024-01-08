@@ -134,10 +134,11 @@
 <style>
 	.header {
 		position: fixed;
+		padding: 0.5em;
 		left: 0;
 		top: 0;
 		width: 100%;
-		height: 3em;
+		height: 2em;
 		background-color: rgba(191, 191, 191, 0.75);
 		z-index: 110;
 	}
