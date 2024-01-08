@@ -9,14 +9,19 @@
     $: imageTransform = `translate(${translate[0]}px, ${translate[1]}px) scale(${scale})`;
     let client;
 
-    export let closePath = "";
+    export let buttonImageBasePath = "";
+    let closePath = `${buttonImageBasePath}/close.png`;
     let closeButton;
-    export let magnifyPath = "";
+    let magnifyPath = `${buttonImageBasePath}/magnify.png`;
     let magnifyButton;
-    export let minifyPath = "";
+    let minifyPath = `${buttonImageBasePath}/minify.png`;
     let minifyButton;
-    export let fitPath = "";
+    let fitPath = `${buttonImageBasePath}/fit.png`;
     let fitButton;
+    let leftAnglePath = `${buttonImageBasePath}/leftAngle.png`;
+    let prevButton;
+    let rightAnglePath = `${buttonImageBasePath}/rightAngle.png`;
+    let nextButton;
 
     function applyZoom(event){
         if(focus === null) return true;
@@ -94,6 +99,10 @@
         scale = 1;
         translate = [0, 0];
     }
+
+    function next() {
+        dispatch('next', imagePath);
+    }
 </script>
 
 <div class="container" bind:this={client} on:wheel={applyZoom}
@@ -105,6 +114,8 @@
         <img class="button" style="top: 96px" bind:this={minifyButton} src={minifyPath} alt="Minify" on:click={minify}>
         <img class="button" style="top: 144px" bind:this={fitButton} src={fitPath} alt="Fit" on:click={fit}>
     </div>
+    <img class="prevButton" bind:this={prevButton} src={leftAnglePath} alt="Prev" on:click={dispatch('prev', imagePath)}>
+    <img class="nextButton" bind:this={nextButton} src={rightAnglePath} alt="Next" on:click={next}>
 </div>
 
 <style>
@@ -129,5 +140,21 @@
         position: absolute;
         left: 0;
         top: 0;
+    }
+
+    .prevButton {
+        position: absolute;
+        left: 48px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+    }
+
+    .nextButton {
+        position: absolute;
+        right: 48px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
     }
 </style>

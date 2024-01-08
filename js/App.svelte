@@ -50,11 +50,28 @@
 		}
 	}
 
+	function onPrevImage() {
+		const found = fileList.map((file, idx) => [file, idx]).find(([file, _]) => joinPath(rootPath, file.path) === selectedFile);
+		selectedFile = joinPath(rootPath, fileList[Math.max(0, found[1] - 1)].path);
+	}
+
+	function onNextImage() {
+		const found = fileList.map((file, idx) => [file, idx]).find(([file, _]) => joinPath(rootPath, file.path) === selectedFile);
+		selectedFile = joinPath(rootPath, fileList[Math.min(fileList.length - 1, found[1] + 1)].path);
+	}
+
 	let isSelectedVideo = false;
 
 	$: {
 		const found = fileList.find(file => joinPath(rootPath, file.path) === selectedFile);
 		isSelectedVideo = found && found.video;
+	}
+
+	function onKeyDown(evt) {
+		switch(evt.keyCode) {
+			case 37: onPrevImage(); break;
+			case 39: onNextImage(); break;
+		}
 	}
 
 	window.addEventListener('load', () => loadPage(rootPath));
@@ -76,11 +93,10 @@
 		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}/>
 	{:else}
 		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`}
-			closePath={`${baseUrl}/close.png`}
-			magnifyPath={`${baseUrl}/magnify.png`}
-			minifyPath={`${baseUrl}/minify.png`}
-			fitPath={`${baseUrl}/fit.png`}
-			on:defocus={defocus}/>
+			buttonImageBasePath={`${baseUrl}`}
+			on:defocus={defocus}
+			on:prev={onPrevImage}
+			on:next={onNextImage}/>
 	{/if}
 </div>
 {/if}
@@ -144,3 +160,5 @@
 		align-content: space-between;
 	}
 </style>
+
+<svelte:window on:keydown|preventDefault={onKeyDown} />
