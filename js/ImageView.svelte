@@ -15,6 +15,8 @@
     let magnifyButton;
     export let minifyPath = "";
     let minifyButton;
+    export let fitPath = "";
+    let fitButton;
 
     function applyZoom(event){
         if(focus === null) return true;
@@ -33,16 +35,18 @@
         scale = Math.min(Math.max(0.1, scale), 20);
     }
 
+    let allButtons = [closeButton, magnifyButton, minifyButton, fitButton];
+
     let dragStart = null;
     let dragMoved = false;
     function mousedown(event) {
-        if(event.target === magnifyButton || event.target === minifyButton) return;
+        if(allButtons.map(button => event.target === button).reduce((acc, cur) => acc || cur)) return;
         event.preventDefault();
         dragStart = [event.clientX, event.clientY];
     }
 
     function mouseup(event) {
-        if(event.target === magnifyButton || event.target === minifyButton) return;
+        if(allButtons.map(button => event.target === button).reduce((acc, cur) => acc || cur)) return;
         dragStart = null;
         dragMoved = false;
     }
@@ -84,6 +88,12 @@
         event.preventDefault();
         scale /= 1.2;
     }
+
+    function fit(event) {
+        event.preventDefault();
+        scale = 1;
+        translate = [0, 0];
+    }
 </script>
 
 <div class="container" bind:this={client} on:wheel={applyZoom}
@@ -93,6 +103,7 @@
         <img class="button" bind:this={closeButton} src={closePath} alt="Close" on:click={close}>
         <img class="button" style="top: 48px" bind:this={magnifyButton} src={magnifyPath} alt="Magnify" on:click={magnify}>
         <img class="button" style="top: 96px" bind:this={minifyButton} src={minifyPath} alt="Minify" on:click={minify}>
+        <img class="button" style="top: 144px" bind:this={fitButton} src={fitPath} alt="Fit" on:click={fit}>
     </div>
 </div>
 

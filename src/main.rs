@@ -72,6 +72,7 @@ implement_static_bytes!(get_video_icon, "../assets/video.png");
 implement_static_bytes!(get_close_icon, "../assets/close.png");
 implement_static_bytes!(get_magnify_icon, "../assets/magnify.png");
 implement_static_bytes!(get_minify_icon, "../assets/minify.png");
+implement_static_bytes!(get_fit_icon, "../assets/fit.png");
 implement_static_bytes!(get_unknown_icon, "../assets/unknown.png");
 
 #[actix_web::main]
@@ -148,6 +149,7 @@ async fn run() -> anyhow::Result<()> {
             .route("/close.png", web::get().to(get_close_icon))
             .route("/magnify.png", web::get().to(get_magnify_icon))
             .route("/minify.png", web::get().to(get_minify_icon))
+            .route("/fit.png", web::get().to(get_fit_icon))
             .route("/unknown.png", web::get().to(get_unknown_icon))
     })
     .bind((args.host, args.port))?

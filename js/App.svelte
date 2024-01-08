@@ -79,6 +79,7 @@
 			closePath={`${baseUrl}/close.png`}
 			magnifyPath={`${baseUrl}/magnify.png`}
 			minifyPath={`${baseUrl}/minify.png`}
+			fitPath={`${baseUrl}/fit.png`}
 			on:defocus={defocus}/>
 	{/if}
 </div>
