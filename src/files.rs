@@ -110,8 +110,12 @@ pub(crate) async fn index() -> HttpResponse {
 
 #[cfg(debug_assertions)]
 #[actix_web::get("/main.js")]
-pub(crate) async fn code() -> &'static str {
-    include_str!("main.js")
+pub(crate) async fn code() -> actix_web::Result<HttpResponse> {
+    use actix_web::error;
+
+    Err(error::ErrorInternalServerError(
+        "Not implemented. Use `npm run dev` to run the frontend dev server.",
+    ))
 }
 
 #[cfg(not(debug_assertions))]
