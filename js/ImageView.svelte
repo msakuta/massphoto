@@ -10,6 +10,7 @@
     let client;
 
     export let magnifyPath = "";
+    let magnifyButton;
 
     function applyZoom(event){
         if(focus === null) return true;
@@ -31,11 +32,13 @@
     let dragStart = null;
     let dragMoved = false;
     function mousedown(event) {
+        if(event.target === magnifyButton) return;
         event.preventDefault();
         dragStart = [event.clientX, event.clientY];
     }
 
     function mouseup(event) {
+        if(event.target === magnifyButton) return;
         if(!dragMoved && event.button === 0){
             dispatch('defocus');
             event.preventDefault();
@@ -68,12 +71,17 @@
         scale = Math.min(client.clientWidth / width, client.clientHeight / height);
     }
 
+    function magnify(event) {
+        event.preventDefault();
+        scale *= 1.2;
+    }
+
 </script>
 
 <div class="container" bind:this={client} on:wheel={applyZoom}
         on:mouseup={mouseup} on:contextmenu={contextmenu} on:mousedown={mousedown} on:mousemove={mousemove} on:mouseleave={mouseleave}>
     <img style="transform: {imageTransform}" class="zoomInt noPointer" src={imagePath} alt={imagePath} on:load={getImageSize}>
-    <img class="button" src={magnifyPath} alt={magnifyPath} on:load={getImageSize}>
+    <img class="button" bind:this={magnifyButton} src={magnifyPath} alt={magnifyPath} on:click={magnify}>
 </div>
 
 <style>
