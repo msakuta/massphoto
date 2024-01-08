@@ -109,13 +109,13 @@
         on:mouseup={mouseup} on:contextmenu={contextmenu} on:mousedown={mousedown} on:mousemove={mousemove} on:mouseleave={mouseleave}>
     <img style="transform: {imageTransform}" class="zoomInt noPointer" src={imagePath} alt={imagePath} on:load={getImageSize}>
     <div class="buttonContainer">
-        <img class="button" bind:this={closeButton} src={closePath} alt="Close" on:click={close}>
-        <img class="button" style="top: 48px" bind:this={magnifyButton} src={magnifyPath} alt="Magnify" on:click={magnify}>
-        <img class="button" style="top: 96px" bind:this={minifyButton} src={minifyPath} alt="Minify" on:click={minify}>
-        <img class="button" style="top: 144px" bind:this={fitButton} src={fitPath} alt="Fit" on:click={fit}>
+        <img class="button barButton" bind:this={closeButton} src={closePath} alt="Close" on:click={close}>
+        <img class="button barButton" style="top: 48px" bind:this={magnifyButton} src={magnifyPath} alt="Magnify" on:click={magnify}>
+        <img class="button barButton" style="top: 96px" bind:this={minifyButton} src={minifyPath} alt="Minify" on:click={minify}>
+        <img class="button barButton" style="top: 144px" bind:this={fitButton} src={fitPath} alt="Fit" on:click={fit}>
     </div>
-    <img class="prevButton" bind:this={prevButton} src={leftAnglePath} alt="Prev" on:click={dispatch('prev', imagePath)}>
-    <img class="nextButton" bind:this={nextButton} src={rightAnglePath} alt="Next" on:click={next}>
+    <img class="button prevButton" bind:this={prevButton} src={leftAnglePath} alt="Prev" on:click={dispatch('prev', imagePath)}>
+    <img class="button nextButton" bind:this={nextButton} src={rightAnglePath} alt="Next" on:click={next}>
 </div>
 
 <style>
@@ -136,7 +136,16 @@
         left: 0;
         top: 64px;
     }
+
     .button {
+        opacity: 0.5;
+    }
+
+    .button:hover {
+        opacity: 1;
+    }
+
+    .barButton {
         position: absolute;
         left: 0;
         top: 0;
