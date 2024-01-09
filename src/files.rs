@@ -2,8 +2,9 @@ mod images;
 mod load_cache;
 
 use crate::{CacheEntry, CacheMap, MyData};
-use actix_web::{error, web, HttpResponse};
+use actix_web::{error, web, HttpRequest, HttpResponse};
 use serde_json::{json, Value};
+use sha1::{Digest, Sha1};
 use std::{
     ffi::OsStr,
     fs, include_str,
@@ -141,20 +142,25 @@ pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> actix_web::Re
 pub(crate) async fn get_file_list(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,
+    req: HttpRequest,
 ) -> actix_web::Result<HttpResponse> {
     let path = path.into_inner();
     let abs_path = data.path.lock().unwrap().join(&path);
     let cache = data.cache.lock().unwrap();
-    let locked = cache
-        .get(&abs_path)
-        .map(CacheEntry::is_locked)
-        .unwrap_or(false);
+    let locked = cache.get(&abs_path).and_then(CacheEntry::password_hash);
 
-    if locked {
-        println!("Album {abs_path:?} is locked");
-        return Err(error::ErrorForbidden(
-            "Forbidden to access password protected album",
-        ));
+    if let Some(db_pass) = locked {
+        let hash = if let Some(passwd) = req.headers().get("X-Auth") {
+            Sha1::digest(passwd).to_vec()
+        } else {
+            vec![]
+        };
+        if hash != db_pass {
+            println!("Album {abs_path:?} is locked");
+            return Err(error::ErrorForbidden(
+                "Forbidden to access password protected album",
+            ));
+        }
     }
     let (dirs, files, _) = scan_dir(&cache, &abs_path)?;
 

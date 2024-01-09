@@ -3,6 +3,7 @@
 
     const dispatch = createEventDispatcher();
 
+    export let message = "Enter password:";
     let password = "";
 
     function cancel() {
@@ -13,7 +14,7 @@
 
 <div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
-        Enter password:
+        {message}
         <input type="password" bind:value={password}>
         <div>
         <button value="Ok" on:click={dispatch('submit', password)}>Ok</button>

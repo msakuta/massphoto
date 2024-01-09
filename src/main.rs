@@ -51,6 +51,13 @@ impl CacheEntry {
             _ => false,
         }
     }
+
+    fn password_hash(&self) -> Option<&[u8]> {
+        match self.payload {
+            CachePayload::Album(ref album) => Some(&album.password_hash),
+            _ => None,
+        }
+    }
 }
 
 type CacheMap = HashMap<PathBuf, CacheEntry>;

@@ -10,11 +10,23 @@
 
 	let rootPath = "";
 
+	let unlockedDirs = {};
+
 	let dirList = [];
 	let fileList = [];
 	async function loadPage(path){
-		const res = await fetch(`${baseUrl}/file_list/${path}`);
+		const headers = {};
+		if(path in unlockedDirs) headers["X-Auth"] = unlockedDirs[path];
+		const res = await fetch(`${baseUrl}/file_list/${path}`, {
+			headers
+		});
 		if(!res.ok){
+			// If the album is password locked, attempt unlock
+			if(res.status === 403){
+				showingUnlockDialog = true;
+				unlockAttemptPath = path;
+				return;
+			}
 			errorMessage = await res.text();
 			return;
 		}
@@ -28,6 +40,8 @@
 	let selectedFile = null;
 
 	let showingLockDialog = false;
+	let showingUnlockDialog = false;
+	let unlockAttemptPath = null;
 
 	let errorMessage = null;
 
@@ -83,6 +97,16 @@
 		showingLockDialog = false;
 	}
 
+	function tryUnlock(evt) {
+		unlockedDirs[unlockAttemptPath] = evt.detail;
+		showingUnlockDialog = false;
+		loadPage(unlockAttemptPath);
+	}
+
+	function cancelUnlock() {
+		showingUnlockDialog = false;
+	}
+
 	function onPrevImage() {
 		const found = fileList.map((file, idx) => [file, idx]).find(([file, _]) => joinPath(rootPath, file.path) === selectedFile);
 		selectedFile = joinPath(rootPath, fileList[Math.max(0, found[1] - 1)].path);
@@ -133,6 +157,8 @@
 <ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
 {:else if showingLockDialog}
 <PasswordEntry on:submit={submitPassword} on:cancel={cancelPassword}/>
+{:else if showingUnlockDialog}
+<PasswordEntry message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
 {/if}
 
 <div class="header">
