@@ -6,7 +6,7 @@ use std::{
 
 use rusqlite::Connection;
 
-use crate::CacheEntry;
+use crate::{AlbumPayload, CacheEntry, CachePayload, FilePayload};
 
 pub(crate) fn load_cache(
     cache: &mut HashMap<PathBuf, CacheEntry>,
@@ -50,7 +50,40 @@ pub(crate) fn load_cache(
                 new: false,
                 modified: file.modified,
                 desc: file.desc,
-                data: file.data,
+                payload: CachePayload::File(FilePayload { data: file.data }),
+            },
+        );
+    }
+
+    #[derive(Debug)]
+    struct Album {
+        path: String,
+        modified: f64,
+        desc: Option<String>,
+        password: Vec<u8>,
+    }
+
+    let mut stmt = conn.prepare("SELECT path, desc, password FROM album WHERE path LIKE ?1")?;
+    let album_iter = stmt.query_map([format!("{}%", abs_path)], |row| {
+        Ok(Album {
+            path: row.get(0)?,
+            modified: 0.,
+            desc: row.get(1).ok(),
+            password: row.get(2)?,
+        })
+    })?;
+
+    for album in album_iter {
+        let album = album?;
+        cache.insert(
+            PathBuf::from(album.path),
+            CacheEntry {
+                new: false,
+                modified: album.modified,
+                desc: album.desc,
+                payload: CachePayload::Album(AlbumPayload {
+                    password_hash: album.password,
+                }),
             },
         );
     }

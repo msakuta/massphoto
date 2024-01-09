@@ -1,8 +1,9 @@
 use super::THUMBNAIL_SIZE;
-use crate::{map_err, CacheEntry, MyData};
+use crate::{map_err, AlbumPayload, CacheEntry, CachePayload, FilePayload, MyData};
 use actix_files::NamedFile;
 use actix_web::{error, http::header::LastModified, web, HttpRequest, HttpResponse, Result};
 use image::{io::Reader as ImageReader, ImageOutputFormat};
+use sha1::{Digest, Sha1};
 
 use std::{
     fs,
@@ -13,11 +14,29 @@ use std::{
 
 pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data
+    let root_dir = data
         .path
         .lock()
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?
-        .join(path);
+        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+    let abs_path = root_dir.join(&path);
+    let cache = data.cache.lock().unwrap();
+    for seg in path.ancestors() {
+        println!("seg {seg:?}", seg = root_dir.join(seg));
+        let Some(entry) = cache.get(&root_dir.join(seg)) else {
+            continue;
+        };
+        // println!("entry {entry:?}");
+        let CachePayload::Album(ref payload) = entry.payload else {
+            continue;
+        };
+        println!("payload {payload:?}");
+        if payload.password_hash.is_empty() {
+            continue;
+        }
+        return Err(error::ErrorForbidden(
+            "Forbidden to access password protected file",
+        ));
+    }
     println!("Opening {:?}", abs_path);
     Ok(NamedFile::open(abs_path)?)
 }
@@ -50,7 +69,13 @@ pub(crate) async fn get_file_thumb(
             .map(|date| date <= entry.modified)
             .unwrap_or(true)
         {
-            return result(entry.data.clone(), entry.modified);
+            if let CachePayload::File(payload) = &entry.payload {
+                return result(payload.data.clone(), entry.modified);
+            } else {
+                return Err(error::ErrorInternalServerError(
+                    "Album does not have thumbnail",
+                ));
+            }
         } else {
             println!("Found thumbnail cache in db, but it is older than the file")
         }
@@ -73,7 +98,7 @@ pub(crate) async fn get_file_thumb(
             new: true,
             modified,
             desc: None,
-            data: out.clone(),
+            payload: CachePayload::File(FilePayload { data: out.clone() }),
         },
     );
 
@@ -145,7 +170,7 @@ pub(crate) async fn set_image_comment(
             new: true,
             modified: 0.,
             desc: Some(desc.to_string()),
-            data: vec![],
+            payload: CachePayload::File(FilePayload { data: vec![] }),
         }
     });
     entry.desc = Some(desc.to_string());
@@ -164,6 +189,80 @@ pub(crate) async fn set_image_comment(
         tx.execute(
             "UPDATE file SET desc = ?2 WHERE path = ?1",
             rusqlite::params![abs_path.to_str(), entry.desc],
+        )
+        .map_err(map_err)?
+    };
+
+    tx.commit().map_err(map_err)?;
+
+    println!("inserted: {inserted}, updated: {updated}");
+
+    Ok(HttpResponse::Ok().content_type("text/plain").body("ok"))
+}
+
+pub(crate) async fn set_album_lock(
+    data: web::Data<MyData>,
+    mut payload: web::Payload,
+    req: HttpRequest,
+) -> Result<HttpResponse> {
+    use futures_util::stream::StreamExt;
+    const MAX_SIZE: usize = 1024;
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk?;
+        // limit max size of in-memory payload
+        if (body.len() + chunk.len()) > MAX_SIZE {
+            return Err(error::ErrorBadRequest("overflow"));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    let password = body.as_ref();
+    let hash = if password.is_empty() {
+        vec![]
+    } else {
+        Sha1::digest(password).to_vec()
+    };
+
+    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
+
+    println!("Password hash set on {path:?} ({abs_path:?}): {hash:?}");
+
+    let mut cache = data.cache.lock().map_err(map_err)?;
+
+    let mut inserted = false;
+    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
+        inserted = true;
+        CacheEntry {
+            new: true,
+            modified: 0.,
+            desc: None,
+            payload: CachePayload::Album(AlbumPayload {
+                password_hash: vec![],
+            }),
+        }
+    });
+
+    let mut db = data.conn.lock().unwrap();
+
+    let tx = db.transaction().map_err(map_err)?;
+
+    let CachePayload::Album(ref mut payload) = entry.payload else {
+        return Err(error::ErrorInternalServerError(
+            "Logic error: inserted was not an album",
+        ));
+    };
+    payload.password_hash = hash;
+    let updated = if inserted {
+        tx.execute(
+            "INSERT INTO album (path, desc, password) VALUES (?1, ?2, ?3)",
+            rusqlite::params![abs_path.to_str(), entry.desc, payload.password_hash],
+        )
+        .map_err(map_err)?
+    } else {
+        tx.execute(
+            "UPDATE album SET password = ?2 WHERE path = ?1",
+            rusqlite::params![abs_path.to_str(), payload.password_hash],
         )
         .map_err(map_err)?
     };

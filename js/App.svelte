@@ -50,6 +50,20 @@
 		}
 	}
 
+	async function onLock() {
+		console.log(`Locking ${rootPath}`);
+		const res = await fetch(`${baseUrl}/albums/${rootPath}/lock`, {
+			method: "POST",
+			mode: "cors",
+			headers: {
+				"Content-Type": "text/plain"
+			},
+			body: "ahoy",
+		});
+		const text = await res.text();
+		console.log(`lock res: ${text}`);
+	}
+
 	function onPrevImage() {
 		const found = fileList.map((file, idx) => [file, idx]).find(([file, _]) => joinPath(rootPath, file.path) === selectedFile);
 		selectedFile = joinPath(rootPath, fileList[Math.max(0, found[1] - 1)].path);
@@ -99,6 +113,7 @@
 		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>
 		<img class="icon" alt="previous (H)" id="leftButton" src={`${baseUrl}/left.png`}>
 		<img class="icon" alt="next (K)" id="rightButton" src={`${baseUrl}/right.png`}>
+		<img class="icon" alt="home" src={`${baseUrl}/lock.png`} on:click={onLock}>
 	</div>
 </div>
 
@@ -162,6 +177,7 @@
 		position: absolute;
 		top: 0;
 		right: 0;
+		margin-right: 20px;
 	}
 
 	.scrollContents {
