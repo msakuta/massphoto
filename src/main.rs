@@ -44,6 +44,15 @@ struct CacheEntry {
     payload: CachePayload,
 }
 
+impl CacheEntry {
+    fn is_locked(&self) -> bool {
+        match self.payload {
+            CachePayload::Album(ref album) => !album.password_hash.is_empty(),
+            _ => false,
+        }
+    }
+}
+
 struct MyData {
     /// The root path of the photoalbum
     path: Mutex<PathBuf>,

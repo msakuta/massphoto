@@ -1,7 +1,7 @@
 mod images;
 mod load_cache;
 
-use crate::MyData;
+use crate::{CacheEntry, MyData};
 use actix_web::{web, HttpResponse};
 use serde_json::{json, Value};
 use std::{
@@ -17,7 +17,9 @@ pub(crate) use self::{
 
 const THUMBNAIL_SIZE: u32 = 100;
 
-fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
+fn scan_dir(data: &web::Data<MyData>, path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
+    let cache = data.cache.lock().unwrap();
+
     let mut has_any_video = false;
 
     let mut dirs = vec![];
@@ -31,12 +33,14 @@ fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
             continue;
         };
         if path.is_dir() {
+            let locked = cache.get(&path).map(CacheEntry::is_locked).unwrap_or(false);
             dirs.push(json!({
                 "path": file_name,
                 "image_first": image_first(&path).and_then(|image_path| {
                     image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
                 }),
-                "file_count": file_count(&path)
+                "file_count": file_count(&path),
+                "locked": locked
             }));
         } else if let Some(os_str) = path.extension() {
             // Ignore files without extensions
@@ -123,7 +127,7 @@ pub(crate) async fn get_bundle_css() -> HttpResponse {
 pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse {
     let path = data.path.lock().unwrap();
 
-    let (dirs, files, _) = scan_dir(&path);
+    let (dirs, files, _) = scan_dir(&data, &path);
 
     HttpResponse::Ok()
         .content_type("application/json")
@@ -142,7 +146,7 @@ pub(crate) async fn get_file_list(
     let path = path.into_inner();
     let abs_path = data.path.lock().unwrap().join(&path);
 
-    let (dirs, files, _) = scan_dir(&abs_path);
+    let (dirs, files, _) = scan_dir(&data, &abs_path);
 
     HttpResponse::Ok()
         .content_type("application/json")

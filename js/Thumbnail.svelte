@@ -12,6 +12,9 @@
 
     function imagePath(){
         if(dir){
+            if(dir.locked){
+                return `${baseUrl}/lock.png`;
+            }
             if(!dir.image_first){
                 return `${baseUrl}/unknown.png`;
             }
