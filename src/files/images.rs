@@ -1,5 +1,8 @@
 use super::THUMBNAIL_SIZE;
-use crate::{map_err, AlbumPayload, CacheEntry, CachePayload, FilePayload, MyData};
+use crate::{
+    cache::{AlbumPayload, CacheEntry, CachePayload, FilePayload},
+    map_err, MyData,
+};
 use actix_files::NamedFile;
 use actix_web::{error, http::header::LastModified, web, HttpRequest, HttpResponse, Result};
 use image::{io::Reader as ImageReader, ImageOutputFormat};

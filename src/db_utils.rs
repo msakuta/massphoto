@@ -8,7 +8,11 @@ use actix_web::web;
 use dunce::canonicalize;
 use rusqlite::Connection;
 
-use crate::{files::load_cache, CacheEntry, CachePayload, MyData};
+use crate::{
+    cache::{CacheEntry, CachePayload},
+    files::load_cache,
+    MyData,
+};
 
 pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
     let conn = Connection::open("sqliter.db")?;

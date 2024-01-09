@@ -1,7 +1,10 @@
 mod images;
 mod load_cache;
 
-use crate::{CacheEntry, CacheMap, MyData};
+use crate::{
+    cache::{CacheEntry, CacheMap},
+    MyData,
+};
 use actix_web::{error, web, HttpRequest, HttpResponse};
 use serde_json::{json, Value};
 use sha1::{Digest, Sha1};

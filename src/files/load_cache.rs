@@ -6,7 +6,7 @@ use std::{
 
 use rusqlite::Connection;
 
-use crate::{AlbumPayload, CacheEntry, CachePayload, FilePayload};
+use crate::cache::{AlbumPayload, CacheEntry, CachePayload, FilePayload};
 
 pub(crate) fn load_cache(
     cache: &mut HashMap<PathBuf, CacheEntry>,

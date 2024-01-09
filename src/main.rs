@@ -1,7 +1,9 @@
+mod cache;
 mod db_utils;
 mod files;
 
 use crate::{
+    cache::CacheMap,
     db_utils::{init_db, write_db},
     files::{
         code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
@@ -14,54 +16,12 @@ use clap::Parser;
 
 use rusqlite::Connection;
 use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     sync::Mutex,
     time::Instant,
 };
 
-#[derive(Debug)]
-struct FilePayload {
-    data: Vec<u8>,
-}
-
-#[derive(Debug)]
-struct AlbumPayload {
-    password_hash: Vec<u8>,
-}
-
-#[derive(Debug)]
-enum CachePayload {
-    File(FilePayload),
-    Album(AlbumPayload),
-}
-
-#[derive(Debug)]
-struct CacheEntry {
-    new: bool,
-    modified: f64,
-    desc: Option<String>,
-    payload: CachePayload,
-}
-
-impl CacheEntry {
-    fn is_locked(&self) -> bool {
-        match self.payload {
-            CachePayload::Album(ref album) => !album.password_hash.is_empty(),
-            _ => false,
-        }
-    }
-
-    fn password_hash(&self) -> Option<&[u8]> {
-        match self.payload {
-            CachePayload::Album(ref album) => Some(&album.password_hash),
-            _ => None,
-        }
-    }
-}
-
-type CacheMap = HashMap<PathBuf, CacheEntry>;
-
+/// The global state of the server. Mutable shared states shall be wrapped in a mutex.
 struct MyData {
     /// The root path of the photoalbum
     path: Mutex<PathBuf>,
