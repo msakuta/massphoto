@@ -17,87 +17,54 @@ pub(crate) use self::{
 
 const THUMBNAIL_SIZE: u32 = 100;
 
-enum Entry {
-    Dir {
-        path: String,
-        image_first: Option<String>,
-        file_count: usize,
-    },
-    File {
-        path: String,
-        label: String,
-        video: bool,
-    },
-}
-
 fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
     let mut has_any_video = false;
 
-    let (dirs, files) = fs::read_dir(&*path)
-    .unwrap()
-    .filter_map(|res| {
-        res.map(|e| {
-            let path = e.path();
-            if path.is_dir() {
-                Some(Entry::Dir {
-                    path: path.file_name()?.to_str()?.to_owned(),
-                    image_first: image_first(&path).and_then(|image_path| {
-                        image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
-                    }),
-                    file_count: file_count(&path),
-                })
-            } else if let Some(os_str) = path.extension() {
-                let ext = os_str.to_ascii_lowercase();
-                if ext == "jpg" || ext == "png" {
-                    Some(Entry::File {
-                        path: format!("{}", path.file_name()?.to_str()?),
-                        label: path.file_name()?.to_str()?.to_owned(),
-                        video: false,
-                    })
-                } else {
-                    let pathstr = path.to_str()?;
-                    if has_extension_segments(pathstr, ".webm")
-                        || has_extension_segments(pathstr, ".mp4")
-                    {
-                        has_any_video = true;
-                        Some(Entry::File {
-                            path: path.file_name()?.to_str()?.to_owned(),
-                            label: path.file_name()?.to_str()?.to_owned(),
-                            video: true,
-                        })
-                    } else {
-                        None
-                    }
-                }
-            } else {
-                // Ignore files without extensions
-                None
-            }
-        })
-        .ok()
-    })
-    .fold((vec![], vec![]), |(mut dirs, mut files), v| {
-        if let Some(Entry::Dir { path, image_first, file_count }) = v {
+    let mut dirs = vec![];
+    let mut files = vec![];
+    for res in fs::read_dir(&*path).unwrap() {
+        let Ok(e) = res else {
+            continue;
+        };
+        let path = e.path();
+        let Some(file_name) = path.file_name().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if path.is_dir() {
             dirs.push(json!({
-                "path": path,
-                "image_first": image_first,
-                "file_count": file_count
+                "path": file_name,
+                "image_first": image_first(&path).and_then(|image_path| {
+                    image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
+                }),
+                "file_count": file_count(&path)
             }));
-        } else if let Some(Entry::File {
-            path,
-            label,
-            video,
-        }) = v
-        {
+        } else if let Some(os_str) = path.extension() {
+            // Ignore files without extensions
+            let ext = os_str.to_ascii_lowercase();
+            let video;
+            if ext == "jpg" || ext == "png" {
+                video = false;
+            } else {
+                let Some(pathstr) = path.to_str() else {
+                    continue;
+                };
+                if has_extension_segments(pathstr, ".webm")
+                    || has_extension_segments(pathstr, ".mp4")
+                {
+                    video = true;
+                    has_any_video = true;
+                } else {
+                    continue;
+                }
+            }
             files.push(json!({
-                "path": path,
+                "path": file_name,
                 "basename": Path::new(&path).file_name().unwrap_or_else(|| OsStr::new("")).to_string_lossy(),
-                "label": label,
+                "label": file_name,
                 "video": video,
             }));
         }
-        (dirs, files)
-    });
+    }
 
     (dirs, files, has_any_video)
 }

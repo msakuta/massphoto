@@ -93,7 +93,7 @@ pub(crate) fn write_db(
                     )?;
                 }
             }
-            CachePayload::Album(value) => {
+            CachePayload::Album(_value) => {
                 todo!()
             }
         }
