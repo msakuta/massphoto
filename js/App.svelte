@@ -2,6 +2,7 @@
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
+	import PasswordEntry from './PasswordEntry.svelte';
 	import { joinPath } from './joinPath';
 
 	const baseUrl = BASE_URL;
@@ -19,6 +20,8 @@
 	}
 
 	let selectedFile = null;
+
+	let showingLockDialog = false;
 
 	function setFocus(evt){
 		selectedFile = evt.detail;
@@ -50,18 +53,28 @@
 		}
 	}
 
-	async function onLock() {
-		console.log(`Locking ${rootPath}`);
+	function onLock() {
+		showingLockDialog = true;
+	}
+
+	async function submitPassword(evt) {
+		const password = evt.detail;
+		console.log(`Locking ${rootPath} with printing password!! Bad boy!! ${password}`);
 		const res = await fetch(`${baseUrl}/albums/${rootPath}/lock`, {
 			method: "POST",
 			mode: "cors",
 			headers: {
 				"Content-Type": "text/plain"
 			},
-			body: "ahoy",
+			body: password,
 		});
 		const text = await res.text();
 		console.log(`lock res: ${text}`);
+		showingLockDialog = false;
+	}
+
+	function cancelPassword() {
+		showingLockDialog = false;
 	}
 
 	function onPrevImage() {
@@ -105,6 +118,10 @@
 
 	window.addEventListener('load', () => loadPage(rootPath));
 </script>
+
+{#if showingLockDialog}
+<PasswordEntry on:submit={submitPassword} on:cancel={cancelPassword}/>
+{/if}
 
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
