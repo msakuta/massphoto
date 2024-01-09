@@ -1,8 +1,8 @@
 mod images;
 mod load_cache;
 
-use crate::{CacheEntry, MyData};
-use actix_web::{web, HttpResponse};
+use crate::{CacheEntry, CacheMap, MyData};
+use actix_web::{error, web, HttpResponse};
 use serde_json::{json, Value};
 use std::{
     ffi::OsStr,
@@ -17,14 +17,12 @@ pub(crate) use self::{
 
 const THUMBNAIL_SIZE: u32 = 100;
 
-fn scan_dir(data: &web::Data<MyData>, path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
-    let cache = data.cache.lock().unwrap();
-
+fn scan_dir(cache: &CacheMap, path: &Path) -> std::io::Result<(Vec<Value>, Vec<Value>, bool)> {
     let mut has_any_video = false;
 
     let mut dirs = vec![];
     let mut files = vec![];
-    for res in fs::read_dir(&*path).unwrap() {
+    for res in fs::read_dir(&*path)? {
         let Ok(e) = res else {
             continue;
         };
@@ -70,7 +68,7 @@ fn scan_dir(data: &web::Data<MyData>, path: &Path) -> (Vec<Value>, Vec<Value>, b
         }
     }
 
-    (dirs, files, has_any_video)
+    Ok((dirs, files, has_any_video))
 }
 
 pub(crate) async fn index() -> HttpResponse {
@@ -124,37 +122,49 @@ pub(crate) async fn get_bundle_css() -> HttpResponse {
 }
 
 #[actix_web::get("/file_list/")]
-pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse {
+pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> actix_web::Result<HttpResponse> {
     let path = data.path.lock().unwrap();
+    let cache = data.cache.lock().unwrap();
 
-    let (dirs, files, _) = scan_dir(&data, &path);
+    let (dirs, files, _) = scan_dir(&cache, &path)?;
 
-    HttpResponse::Ok()
+    Ok(HttpResponse::Ok()
         .content_type("application/json")
         .json(&json!({
             "path": "",
             "dirs": dirs,
             "files": files,
-        }))
+        })))
 }
 
 #[actix_web::get("/file_list/{path:.*}")]
 pub(crate) async fn get_file_list(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,
-) -> HttpResponse {
+) -> actix_web::Result<HttpResponse> {
     let path = path.into_inner();
     let abs_path = data.path.lock().unwrap().join(&path);
+    let cache = data.cache.lock().unwrap();
+    let locked = cache
+        .get(&abs_path)
+        .map(CacheEntry::is_locked)
+        .unwrap_or(false);
 
-    let (dirs, files, _) = scan_dir(&data, &abs_path);
+    if locked {
+        println!("Album {abs_path:?} is locked");
+        return Err(error::ErrorForbidden(
+            "Forbidden to access password protected album",
+        ));
+    }
+    let (dirs, files, _) = scan_dir(&cache, &abs_path)?;
 
-    HttpResponse::Ok()
+    Ok(HttpResponse::Ok()
         .content_type("application/json")
         .json(&json!({
             "path": *path,
             "dirs": dirs,
             "files": files,
-        }))
+        })))
 }
 
 /// Standard's `Path` can be used for last segment of file extensions,

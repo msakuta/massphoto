@@ -3,6 +3,7 @@
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
 	import PasswordEntry from './PasswordEntry.svelte';
+	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
 
 	const baseUrl = BASE_URL;
@@ -13,15 +14,22 @@
 	let fileList = [];
 	async function loadPage(path){
 		const res = await fetch(`${baseUrl}/file_list/${path}`);
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
 		const json = await res.json();
 		dirList = json.dirs;
 		fileList = json.files;
 		selectedFile = null;
+		rootPath = path;
 	}
 
 	let selectedFile = null;
 
 	let showingLockDialog = false;
+
+	let errorMessage = null;
 
 	function setFocus(evt){
 		selectedFile = evt.detail;
@@ -32,13 +40,11 @@
 	}
 
 	function selectDir(event){
-		rootPath = event.detail;
-		loadPage(rootPath);
+		loadPage(event.detail);
 	}
 
 	function onHome(){
-		rootPath = "";
-		loadPage(rootPath);
+		loadPage("");
 	}
 
 	function onUp(){
@@ -116,10 +122,16 @@
 
 	$: commentUrl = `${baseUrl}/comments/${selectedFile}`;
 
+	function onCloseErrorMessage() {
+		errorMessage = null;
+	}
+
 	window.addEventListener('load', () => loadPage(rootPath));
 </script>
 
-{#if showingLockDialog}
+{#if errorMessage !== null}
+<ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
+{:else if showingLockDialog}
 <PasswordEntry on:submit={submitPassword} on:cancel={cancelPassword}/>
 {/if}
 

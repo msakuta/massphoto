@@ -53,10 +53,12 @@ impl CacheEntry {
     }
 }
 
+type CacheMap = HashMap<PathBuf, CacheEntry>;
+
 struct MyData {
     /// The root path of the photoalbum
     path: Mutex<PathBuf>,
-    cache: Mutex<HashMap<PathBuf, CacheEntry>>,
+    cache: Mutex<CacheMap>,
     conn: Mutex<Connection>,
     // stats: Mutex<StatsBundle>,
 }
