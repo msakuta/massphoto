@@ -54,6 +54,7 @@ pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
         cache: Mutex::new(cache),
         conn: Mutex::new(conn),
         // stats: Mutex::default(),
+        sessions: Mutex::default(),
     });
     Ok(data)
 }

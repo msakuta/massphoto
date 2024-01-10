@@ -45,6 +45,22 @@
 
 	let errorMessage = null;
 
+	// let sessionId = "";
+
+	async function createOrRestoreSession() {
+		// if(document.cookie){
+		// 	sessionId = document.cookie;
+		// 	console.log(`SessionId restored: ${sessionId}`);
+		// 	return;
+		// }
+		const res = await fetch(`${baseUrl}/sessions`, {
+			method: "POST",
+			body: "",
+		});
+		// sessionId = await res.text();
+		// document.cookie = sessionId;
+	}
+
 	function setFocus(evt){
 		selectedFile = evt.detail;
 	}
@@ -251,4 +267,4 @@
 	}
 </style>
 
-<svelte:window on:keydown={onKeyDown} />
+<svelte:window on:keydown={onKeyDown} on:load={createOrRestoreSession}/>

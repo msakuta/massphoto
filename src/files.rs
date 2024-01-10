@@ -5,7 +5,7 @@ use crate::{
     cache::{CacheEntry, CacheMap},
     MyData,
 };
-use actix_web::{error, web, HttpRequest, HttpResponse};
+use actix_web::{error, web, HttpRequest, HttpResponse, cookie::{Cookie, SameSite}};
 use serde_json::{json, Value};
 use sha1::{Digest, Sha1};
 use std::{
@@ -78,7 +78,19 @@ fn scan_dir(cache: &CacheMap, path: &Path) -> std::io::Result<(Vec<Value>, Vec<V
 pub(crate) async fn index() -> HttpResponse {
     let html = include_str!("../public/index.html");
 
-    HttpResponse::Ok().content_type("text/html").body(html)
+    // let mut sessions = data.sessions.lock().unwrap();
+    // let next_id = sessions.len().to_string();
+    // sessions.insert(next_id.clone(), Session::new());
+
+    let next_id = "0";
+
+    let mut cookie = Cookie::build("sessionId", next_id)
+        //  .domain("www.rust-lang.org")
+        //  .path("/")
+        .http_only(true)
+        .same_site(SameSite::None)
+         .finish();
+    HttpResponse::Ok().cookie(cookie).content_type("text/html").body(html)
 }
 
 #[cfg(debug_assertions)]

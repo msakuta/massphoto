@@ -1,6 +1,7 @@
 mod cache;
 mod db_utils;
 mod files;
+mod session;
 
 use crate::{
     cache::CacheMap,
@@ -9,6 +10,7 @@ use crate::{
         code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
         get_global_css, get_image_comment, index, set_album_lock, set_image_comment,
     },
+    session::{create_session, Session, Sessions, authorize_album},
 };
 use actix_cors::Cors;
 use actix_web::{error, web, App, Error, HttpServer};
@@ -28,6 +30,7 @@ struct MyData {
     cache: Mutex<CacheMap>,
     conn: Mutex<Connection>,
     // stats: Mutex<StatsBundle>,
+    sessions: Mutex<Sessions>,
 }
 
 #[derive(Parser, Debug)]
@@ -129,6 +132,8 @@ async fn run() -> anyhow::Result<()> {
             .route("/thumbs/{file:.*}", web::get().to(get_file_thumb))
             .route("/files/{file:.*}", web::get().to(get_file))
             .route("/albums/{file:.*}/lock", web::post().to(set_album_lock))
+            .route("/sessions", web::post().to(create_session))
+            .route("/sessions", web::post().to(authorize_album))
             .route("/home.png", web::get().to(get_home_icon))
             .route("/up.png", web::get().to(get_up_icon))
             .route("/left.png", web::get().to(get_left_icon))
