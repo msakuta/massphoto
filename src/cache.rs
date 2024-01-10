@@ -34,7 +34,7 @@ impl CacheEntry {
         }
     }
 
-    pub(crate) fn password_hash(&self) -> Option<&[u8]> {
+    pub(crate) fn _password_hash(&self) -> Option<&[u8]> {
         match self.payload {
             CachePayload::Album(ref album) => Some(&album.password_hash),
             _ => None,

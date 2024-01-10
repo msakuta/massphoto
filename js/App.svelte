@@ -10,15 +10,13 @@
 
 	let rootPath = "";
 
-	let unlockedDirs = {};
-
 	let dirList = [];
 	let fileList = [];
 	async function loadPage(path){
-		const headers = {};
-		if(path in unlockedDirs) headers["X-Auth"] = unlockedDirs[path];
+		const headers = {  };
 		const res = await fetch(`${baseUrl}/file_list/${path}`, {
-			headers
+			headers,
+			credentials: "include",
 		});
 		if(!res.ok){
 			// If the album is password locked, attempt unlock
@@ -45,20 +43,12 @@
 
 	let errorMessage = null;
 
-	// let sessionId = "";
-
 	async function createOrRestoreSession() {
-		// if(document.cookie){
-		// 	sessionId = document.cookie;
-		// 	console.log(`SessionId restored: ${sessionId}`);
-		// 	return;
-		// }
 		const res = await fetch(`${baseUrl}/sessions`, {
-			method: "POST",
-			body: "",
+			method: "GET",
+			credentials: "include",
 		});
-		// sessionId = await res.text();
-		// document.cookie = sessionId;
+		if(!res.ok) errorMessage = await res.text();
 	}
 
 	function setFocus(evt){
@@ -113,10 +103,20 @@
 		showingLockDialog = false;
 	}
 
-	function tryUnlock(evt) {
-		unlockedDirs[unlockAttemptPath] = evt.detail;
-		showingUnlockDialog = false;
-		loadPage(unlockAttemptPath);
+	async function tryUnlock(evt) {
+		const res = await fetch(`${baseUrl}/albums/${unlockAttemptPath}/auth`, {
+			method: "POST",
+			credentials: "include",
+			body: evt.detail,
+		});
+		if(res.ok){
+			const ok = await res.text();
+			showingUnlockDialog = false;
+			loadPage(unlockAttemptPath);
+		}
+		else{
+			errorMessage = await res.text();
+		}
 	}
 
 	function cancelUnlock() {
@@ -166,7 +166,11 @@
 		errorMessage = null;
 	}
 
-	window.addEventListener('load', () => loadPage(rootPath));
+	async function initialize() {
+		// Get the session before fetching the first file list.
+		await createOrRestoreSession();
+		loadPage(rootPath);
+	}
 </script>
 
 {#if errorMessage !== null}
@@ -267,4 +271,4 @@
 	}
 </style>
 
-<svelte:window on:keydown={onKeyDown} on:load={createOrRestoreSession}/>
+<svelte:window on:keydown={onKeyDown} on:load={initialize}/>

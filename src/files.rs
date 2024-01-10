@@ -3,11 +3,13 @@ mod load_cache;
 
 use crate::{
     cache::{CacheEntry, CacheMap},
+    session::{find_session, Session},
     MyData,
 };
-use actix_web::{error, web, HttpRequest, HttpResponse, cookie::{Cookie, SameSite}};
+use actix_web::{
+    error, web, HttpRequest, HttpResponse,
+};
 use serde_json::{json, Value};
-use sha1::{Digest, Sha1};
 use std::{
     ffi::OsStr,
     fs, include_str,
@@ -21,7 +23,11 @@ pub(crate) use self::{
 
 const THUMBNAIL_SIZE: u32 = 100;
 
-fn scan_dir(cache: &CacheMap, path: &Path) -> std::io::Result<(Vec<Value>, Vec<Value>, bool)> {
+fn scan_dir(
+    cache: &CacheMap,
+    path: &Path,
+    session: Option<&Session>,
+) -> std::io::Result<(Vec<Value>, Vec<Value>, bool)> {
     let mut has_any_video = false;
 
     let mut dirs = vec![];
@@ -35,7 +41,10 @@ fn scan_dir(cache: &CacheMap, path: &Path) -> std::io::Result<(Vec<Value>, Vec<V
             continue;
         };
         if path.is_dir() {
-            let locked = cache.get(&path).map(CacheEntry::is_locked).unwrap_or(false);
+            let locked = cache
+                .get(&path)
+                .map(|entry| !authorized(&path, entry, session))
+                .unwrap_or(false);
             dirs.push(json!({
                 "path": file_name,
                 "image_first": image_first(&path).and_then(|image_path| {
@@ -75,22 +84,18 @@ fn scan_dir(cache: &CacheMap, path: &Path) -> std::io::Result<(Vec<Value>, Vec<V
     Ok((dirs, files, has_any_video))
 }
 
+pub(crate) fn authorized(path: &Path, cache_entry: &CacheEntry, session: Option<&Session>) -> bool {
+    if !cache_entry.is_locked() {
+        return true;
+    }
+    session
+        .map(|session| session.auth_dirs.contains(path))
+        .unwrap_or(false)
+}
+
 pub(crate) async fn index() -> HttpResponse {
     let html = include_str!("../public/index.html");
-
-    // let mut sessions = data.sessions.lock().unwrap();
-    // let next_id = sessions.len().to_string();
-    // sessions.insert(next_id.clone(), Session::new());
-
-    let next_id = "0";
-
-    let mut cookie = Cookie::build("sessionId", next_id)
-        //  .domain("www.rust-lang.org")
-        //  .path("/")
-        .http_only(true)
-        .same_site(SameSite::None)
-         .finish();
-    HttpResponse::Ok().cookie(cookie).content_type("text/html").body(html)
+    HttpResponse::Ok().content_type("text/html").body(html)
 }
 
 #[cfg(debug_assertions)]
@@ -138,11 +143,16 @@ pub(crate) async fn get_bundle_css() -> HttpResponse {
 }
 
 #[actix_web::get("/file_list/")]
-pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> actix_web::Result<HttpResponse> {
+pub(crate) async fn get_file_list_root(
+    data: web::Data<MyData>,
+    req: HttpRequest,
+) -> actix_web::Result<HttpResponse> {
+    let sessions = data.sessions.lock().unwrap();
+    let session = find_session(&req, &sessions);
     let path = data.path.lock().unwrap();
     let cache = data.cache.lock().unwrap();
 
-    let (dirs, files, _) = scan_dir(&cache, &path)?;
+    let (dirs, files, _) = scan_dir(&cache, &path, session)?;
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -159,25 +169,23 @@ pub(crate) async fn get_file_list(
     data: web::Data<MyData>,
     req: HttpRequest,
 ) -> actix_web::Result<HttpResponse> {
+    let sessions = data.sessions.lock().unwrap();
+    let session = find_session(&req, &sessions);
     let path = path.into_inner();
     let abs_path = data.path.lock().unwrap().join(&path);
     let cache = data.cache.lock().unwrap();
-    let locked = cache.get(&abs_path).and_then(CacheEntry::password_hash);
 
-    if let Some(db_pass) = locked {
-        let hash = if let Some(passwd) = req.headers().get("X-Auth") {
-            Sha1::digest(passwd).to_vec()
-        } else {
-            vec![]
-        };
-        if hash != db_pass {
-            println!("Album {abs_path:?} is locked");
-            return Err(error::ErrorForbidden(
-                "Forbidden to access password protected album",
-            ));
-        }
+    if cache
+        .get(&abs_path)
+        .map(|entry| !authorized(&abs_path, entry, session))
+        .unwrap_or(false)
+    {
+        println!("Album {abs_path:?} is locked");
+        return Err(error::ErrorForbidden(
+            "Forbidden to access password protected album",
+        ));
     }
-    let (dirs, files, _) = scan_dir(&cache, &abs_path)?;
+    let (dirs, files, _) = scan_dir(&cache, &abs_path, session)?;
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
