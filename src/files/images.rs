@@ -39,15 +39,6 @@ pub(crate) async fn get_file_thumb(
     data: web::Data<MyData>,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    let sessions = data.sessions.read().unwrap();
-    let session = find_session(&req, &sessions);
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let root_dir = data.path.lock().unwrap();
-    let abs_path = root_dir.join(&path);
-    let cache = data.cache.lock().unwrap();
-    authorized_path(&path, &root_dir, session, &cache)?;
-    println!("Opening {:?}", abs_path);
-
     let result = |out, modified| {
         let mut builder = HttpResponse::Ok();
         builder.content_type("image/jpg");
@@ -57,23 +48,38 @@ pub(crate) async fn get_file_thumb(
         Ok(builder.body(out))
     };
 
-    if let Some(entry) = cache.get(&abs_path) {
-        // Defaults true because some filesystems do not support file modified dates. I don't know such a
-        // filesystem, but Rust documentation says so.
-        if get_file_modified(&abs_path)
-            .map(|date| date <= entry.modified)
-            .unwrap_or(true)
-        {
-            if let CachePayload::File(payload) = &entry.payload {
-                return result(payload.data.clone(), entry.modified);
+    let abs_path;
+    {
+        let sessions = data.sessions.read().map_err(map_err)?;
+        let session = find_session(&req, &sessions);
+        let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+        let root_dir = data.path.lock().map_err(map_err)?;
+        abs_path = root_dir.join(&path);
+        let cache = data.cache.lock().map_err(map_err)?;
+        authorized_path(&path, &root_dir, session, &cache)?;
+        println!("[{:?}]Opening {:?}", std::thread::current().id(), abs_path);
+
+        if let Some(entry) = cache.get(&abs_path) {
+            // Defaults true because some filesystems do not support file modified dates. I don't know such a
+            // filesystem, but Rust documentation says so.
+            if get_file_modified(&abs_path)
+                .map(|date| date <= entry.modified)
+                .unwrap_or(true)
+            {
+                if let CachePayload::File(payload) = &entry.payload {
+                    if !payload.data.is_empty() {
+                        return result(payload.data.clone(), entry.modified);
+                    }
+                } else {
+                    return Err(error::ErrorInternalServerError(
+                        "Album does not have thumbnail",
+                    ));
+                }
             } else {
-                return Err(error::ErrorInternalServerError(
-                    "Album does not have thumbnail",
-                ));
+                println!("Found thumbnail cache in db, but it is older than the file")
             }
-        } else {
-            println!("Found thumbnail cache in db, but it is older than the file")
         }
+        // Drop all mutex locks here before entering CPU intense processing
     }
 
     let img = ImageReader::open(&abs_path)?
@@ -87,7 +93,8 @@ pub(crate) async fn get_file_thumb(
 
     let modified = get_file_modified(&abs_path).unwrap_or(0.);
 
-    data.cache.lock().map_err(map_err)?.insert(
+    let mut cache = data.cache.lock().map_err(map_err)?;
+    cache.insert(
         abs_path,
         CacheEntry {
             new: true,
