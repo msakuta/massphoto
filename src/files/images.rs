@@ -7,7 +7,12 @@ use crate::{
     MyData,
 };
 use actix_files::NamedFile;
-use actix_web::{error, http::header::LastModified, web, HttpRequest, HttpResponse, Result};
+use actix_web::{
+    error,
+    http::header::LastModified,
+    web::{self, Bytes},
+    HttpRequest, HttpResponse, Result,
+};
 use image::{io::Reader as ImageReader, ImageOutputFormat};
 use sha1::{Digest, Sha1};
 
@@ -216,33 +221,25 @@ pub(crate) async fn set_image_comment(
 
 pub(crate) async fn set_album_lock(
     data: web::Data<MyData>,
-    mut payload: web::Payload,
     req: HttpRequest,
+    bytes: Bytes,
 ) -> Result<HttpResponse> {
-    use futures_util::stream::StreamExt;
-    const MAX_SIZE: usize = 1024;
-    let mut body = web::BytesMut::new();
-    while let Some(chunk) = payload.next().await {
-        let chunk = chunk?;
-        // limit max size of in-memory payload
-        if (body.len() + chunk.len()) > MAX_SIZE {
-            return Err(error::ErrorBadRequest("overflow"));
-        }
-        body.extend_from_slice(&chunk);
-    }
-    let password = body.as_ref();
+    let sessions = data.sessions.lock().map_err(map_err)?;
+    let session = find_session(&req, &sessions);
+    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+    let root_dir = data.path.lock().map_err(map_err)?;
+    let mut cache = data.cache.lock().map_err(map_err)?;
+    authorized_path(&path, &root_dir, session, &cache)?;
+    let password = bytes.as_ref();
     let hash = if password.is_empty() {
         vec![]
     } else {
         Sha1::digest(password).to_vec()
     };
 
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
+    let abs_path = root_dir.join(&path);
 
     println!("Password hash set on {path:?} ({abs_path:?}): {hash:?}");
-
-    let mut cache = data.cache.lock().map_err(map_err)?;
 
     let mut inserted = false;
     let entry = cache.entry(abs_path.clone()).or_insert_with(|| {

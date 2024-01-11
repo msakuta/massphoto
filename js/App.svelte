@@ -83,15 +83,15 @@
 		showingLockDialog = true;
 	}
 
-	async function submitPassword(evt) {
+	async function lockWithPassword(evt) {
 		const password = evt.detail;
-		console.log(`Locking ${rootPath} with printing password!! Bad boy!! ${password}`);
 		const res = await fetch(`${baseUrl}/albums/${rootPath}/lock`, {
 			method: "POST",
 			mode: "cors",
 			headers: {
 				"Content-Type": "text/plain"
 			},
+			credentials: "include",
 			body: password,
 		});
 		const text = await res.text();
@@ -176,7 +176,7 @@
 {#if errorMessage !== null}
 <ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
 {:else if showingLockDialog}
-<PasswordEntry on:submit={submitPassword} on:cancel={cancelPassword}/>
+<PasswordEntry on:submit={lockWithPassword} on:cancel={cancelPassword}/>
 {:else if showingUnlockDialog}
 <PasswordEntry message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
 {/if}
