@@ -1,9 +1,9 @@
 use super::THUMBNAIL_SIZE;
 use crate::{
-    cache::{AlbumPayload, CacheEntry, CachePayload, FilePayload},
+    cache::{AlbumPayload, CacheEntry, CacheMap, CachePayload, FilePayload},
     files::authorized,
     map_err,
-    session::find_session,
+    session::{find_session, Session},
     MyData,
 };
 use actix_files::NamedFile;
@@ -28,18 +28,7 @@ pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Resul
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
     let abs_path = root_dir.join(&path);
     let cache = data.cache.lock().unwrap();
-    for seg in path.ancestors() {
-        let ancestor_path = root_dir.join(seg);
-        let Some(entry) = cache.get(&ancestor_path) else {
-            continue;
-        };
-        if authorized(&ancestor_path, &entry, session) {
-            continue;
-        }
-        return Err(error::ErrorForbidden(
-            "Forbidden to access password protected file",
-        ));
-    }
+    authorized_path(&path, &root_dir, session, &cache)?;
     println!("Opening {:?}", abs_path);
     Ok(NamedFile::open(abs_path)?)
 }
@@ -48,12 +37,13 @@ pub(crate) async fn get_file_thumb(
     data: web::Data<MyData>,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
+    let sessions = data.sessions.lock().unwrap();
+    let session = find_session(&req, &sessions);
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data
-        .path
-        .lock()
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?
-        .join(path);
+    let root_dir = data.path.lock().unwrap();
+    let abs_path = root_dir.join(&path);
+    let cache = data.cache.lock().unwrap();
+    authorized_path(&path, &root_dir, session, &cache)?;
     println!("Opening {:?}", abs_path);
 
     let result = |out, modified| {
@@ -65,7 +55,7 @@ pub(crate) async fn get_file_thumb(
         Ok(builder.body(out))
     };
 
-    if let Some(entry) = data.cache.lock().map_err(map_err)?.get(&abs_path) {
+    if let Some(entry) = cache.get(&abs_path) {
         // Defaults true because some filesystems do not support file modified dates. I don't know such a
         // filesystem, but Rust documentation says so.
         if get_file_modified(&abs_path)
@@ -106,6 +96,27 @@ pub(crate) async fn get_file_thumb(
     );
 
     result(out, modified)
+}
+
+fn authorized_path(
+    path: &Path,
+    root_dir: &Path,
+    session: Option<&Session>,
+    cache: &CacheMap,
+) -> actix_web::Result<()> {
+    for seg in path.ancestors() {
+        let ancestor_path = root_dir.join(seg);
+        let Some(entry) = cache.get(&ancestor_path) else {
+            continue;
+        };
+        if authorized(&ancestor_path, &entry, session) {
+            continue;
+        }
+        return Err(error::ErrorForbidden(
+            "Forbidden to access password protected file",
+        ));
+    }
+    Ok(())
 }
 
 /// Return modified date in days since Unix epoch
