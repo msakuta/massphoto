@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::Mutex,
+    sync::{Mutex, RwLock},
 };
 
 use actix_web::web;
@@ -54,7 +54,7 @@ pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
         cache: Mutex::new(cache),
         conn: Mutex::new(conn),
         // stats: Mutex::default(),
-        sessions: Mutex::default(),
+        sessions: RwLock::default(),
     });
     Ok(data)
 }

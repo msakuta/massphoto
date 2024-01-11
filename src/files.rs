@@ -146,7 +146,7 @@ pub(crate) async fn get_file_list_root(
     data: web::Data<MyData>,
     req: HttpRequest,
 ) -> actix_web::Result<HttpResponse> {
-    let sessions = data.sessions.lock().unwrap();
+    let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let path = data.path.lock().unwrap();
     let cache = data.cache.lock().unwrap();
@@ -168,7 +168,7 @@ pub(crate) async fn get_file_list(
     data: web::Data<MyData>,
     req: HttpRequest,
 ) -> actix_web::Result<HttpResponse> {
-    let sessions = data.sessions.lock().unwrap();
+    let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let path = path.into_inner();
     let abs_path = data.path.lock().unwrap().join(&path);
@@ -185,6 +185,8 @@ pub(crate) async fn get_file_list(
         ));
     }
     let (dirs, files, _) = scan_dir(&cache, &abs_path, session)?;
+
+    println!("File list for {path:?}");
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")

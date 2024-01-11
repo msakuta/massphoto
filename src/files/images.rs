@@ -24,13 +24,10 @@ use std::{
 };
 
 pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
-    let sessions = data.sessions.lock().unwrap();
+    let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let root_dir = data
-        .path
-        .lock()
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+    let root_dir = data.path.lock().map_err(map_err)?;
     let abs_path = root_dir.join(&path);
     let cache = data.cache.lock().unwrap();
     authorized_path(&path, &root_dir, session, &cache)?;
@@ -42,7 +39,7 @@ pub(crate) async fn get_file_thumb(
     data: web::Data<MyData>,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    let sessions = data.sessions.lock().unwrap();
+    let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let root_dir = data.path.lock().unwrap();
@@ -159,21 +156,10 @@ pub(crate) async fn get_image_comment(
 
 pub(crate) async fn set_image_comment(
     data: web::Data<MyData>,
-    mut payload: web::Payload,
+    bytes: Bytes,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    use futures_util::stream::StreamExt;
-    const MAX_SIZE: usize = 1024 * 100;
-    let mut body = web::BytesMut::new();
-    while let Some(chunk) = payload.next().await {
-        let chunk = chunk?;
-        // limit max size of in-memory payload
-        if (body.len() + chunk.len()) > MAX_SIZE {
-            return Err(error::ErrorBadRequest("overflow"));
-        }
-        body.extend_from_slice(&chunk);
-    }
-    let desc = std::str::from_utf8(&body).unwrap();
+    let desc = std::str::from_utf8(&bytes).unwrap();
 
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let abs_path = data.path.lock().map_err(map_err)?.join(&path);
@@ -224,7 +210,7 @@ pub(crate) async fn set_album_lock(
     req: HttpRequest,
     bytes: Bytes,
 ) -> Result<HttpResponse> {
-    let sessions = data.sessions.lock().map_err(map_err)?;
+    let sessions = data.sessions.read().map_err(map_err)?;
     let session = find_session(&req, &sessions);
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let root_dir = data.path.lock().map_err(map_err)?;

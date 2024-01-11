@@ -31,7 +31,7 @@ impl Session {
 pub(crate) type Sessions = HashMap<String, Session>;
 
 pub(crate) async fn create_session(data: web::Data<MyData>, req: HttpRequest) -> HttpResponse {
-    let mut sessions = data.sessions.lock().unwrap();
+    let mut sessions = data.sessions.write().unwrap();
     if find_session(&req, &sessions).is_some() {
         return HttpResponse::Ok().body("Ok");
     }
@@ -85,7 +85,7 @@ pub(crate) async fn authorize_album(
     req: HttpRequest,
     bytes: Bytes,
 ) -> actix_web::Result<String> {
-    let mut sessions = data.sessions.lock().unwrap();
+    let mut sessions = data.sessions.write().unwrap();
     let Some(session) = find_session_mut(&req, &mut sessions) else {
         return Err(error::ErrorBadRequest(
             "Session was not found; create a new session",

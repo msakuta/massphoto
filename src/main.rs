@@ -19,7 +19,7 @@ use clap::Parser;
 use rusqlite::Connection;
 use std::{
     path::{Path, PathBuf},
-    sync::Mutex,
+    sync::{Mutex, RwLock},
     time::Instant,
 };
 
@@ -30,7 +30,7 @@ struct MyData {
     cache: Mutex<CacheMap>,
     conn: Mutex<Connection>,
     // stats: Mutex<StatsBundle>,
-    sessions: Mutex<Sessions>,
+    sessions: RwLock<Sessions>,
 }
 
 #[derive(Parser, Debug)]
