@@ -1,7 +1,10 @@
 use super::THUMBNAIL_SIZE;
 use crate::{
     cache::{AlbumPayload, CacheEntry, CachePayload, FilePayload},
-    map_err, MyData,
+    files::authorized,
+    map_err,
+    session::find_session,
+    MyData,
 };
 use actix_files::NamedFile;
 use actix_web::{error, http::header::LastModified, web, HttpRequest, HttpResponse, Result};
@@ -16,6 +19,8 @@ use std::{
 };
 
 pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
+    let sessions = data.sessions.lock().unwrap();
+    let session = find_session(&req, &sessions);
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let root_dir = data
         .path
@@ -24,16 +29,11 @@ pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Resul
     let abs_path = root_dir.join(&path);
     let cache = data.cache.lock().unwrap();
     for seg in path.ancestors() {
-        println!("seg {seg:?}", seg = root_dir.join(seg));
-        let Some(entry) = cache.get(&root_dir.join(seg)) else {
+        let ancestor_path = root_dir.join(seg);
+        let Some(entry) = cache.get(&ancestor_path) else {
             continue;
         };
-        // println!("entry {entry:?}");
-        let CachePayload::Album(ref payload) = entry.payload else {
-            continue;
-        };
-        println!("payload {payload:?}");
-        if payload.password_hash.is_empty() {
+        if authorized(&ancestor_path, &entry, session) {
             continue;
         }
         return Err(error::ErrorForbidden(

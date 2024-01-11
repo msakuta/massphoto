@@ -6,9 +6,7 @@ use crate::{
     session::{find_session, Session},
     MyData,
 };
-use actix_web::{
-    error, web, HttpRequest, HttpResponse,
-};
+use actix_web::{error, web, HttpRequest, HttpResponse};
 use serde_json::{json, Value};
 use std::{
     ffi::OsStr,
@@ -84,6 +82,7 @@ fn scan_dir(
     Ok((dirs, files, has_any_video))
 }
 
+/// Returns true when the path is accessible
 pub(crate) fn authorized(path: &Path, cache_entry: &CacheEntry, session: Option<&Session>) -> bool {
     if !cache_entry.is_locked() {
         return true;
