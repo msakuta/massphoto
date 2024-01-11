@@ -1,7 +1,7 @@
 use super::THUMBNAIL_SIZE;
 use crate::{
     cache::{AlbumPayload, CacheEntry, CacheMap, CachePayload, FilePayload},
-    files::authorized,
+    files::{authorized, load_cache::load_cache_single},
     map_err,
     session::{find_session, Session},
     MyData,
@@ -50,6 +50,7 @@ pub(crate) async fn get_file_thumb(
 
     let abs_path;
     {
+        static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
         let sessions = data.sessions.read().map_err(map_err)?;
         let session = find_session(&req, &sessions);
         let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
@@ -57,7 +58,13 @@ pub(crate) async fn get_file_thumb(
         abs_path = root_dir.join(&path);
         let cache = data.cache.lock().map_err(map_err)?;
         authorized_path(&path, &root_dir, session, &cache)?;
-        println!("[{:?}]Opening {:?}", std::thread::current().id(), abs_path);
+        let start = START.get_or_init(|| std::time::Instant::now());
+        println!(
+            "[{:?}] [{:?}] Opening {:?}",
+            std::thread::current().id(),
+            start.elapsed(),
+            abs_path
+        );
 
         if let Some(entry) = cache.get(&abs_path) {
             // Defaults true because some filesystems do not support file modified dates. I don't know such a
@@ -67,6 +74,11 @@ pub(crate) async fn get_file_thumb(
                 .unwrap_or(true)
             {
                 if let CachePayload::File(payload) = &entry.payload {
+                    let data = load_cache_single(&data.conn.lock().unwrap(), &abs_path)
+                        .map_err(map_err)?;
+                    if !data.is_empty() {
+                        return result(data, entry.modified);
+                    }
                     if !payload.data.is_empty() {
                         return result(payload.data.clone(), entry.modified);
                     }

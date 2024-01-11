@@ -4,7 +4,7 @@ mod files;
 mod session;
 
 use crate::{
-    cache::CacheMap,
+    cache::{clear_cache, CacheMap},
     db_utils::{init_db, write_db},
     files::{
         code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
@@ -73,6 +73,7 @@ macro_rules! implement_static_bytes {
     };
 }
 
+implement_static_bytes!(get_clear_cache_icon, "../assets/clearCache.png");
 implement_static_bytes!(get_home_icon, "../assets/home.png");
 implement_static_bytes!(get_up_icon, "../assets/up.png");
 implement_static_bytes!(get_left_icon, "../assets/left.png");
@@ -134,6 +135,7 @@ async fn run() -> anyhow::Result<()> {
             .route("/albums/{file:.*}/lock", web::post().to(set_album_lock))
             .route("/albums/{file:.*}/auth", web::post().to(authorize_album))
             .route("/sessions", web::get().to(create_session))
+            .route("/clearCache.png", web::get().to(get_clear_cache_icon))
             .route("/home.png", web::get().to(get_home_icon))
             .route("/up.png", web::get().to(get_up_icon))
             .route("/left.png", web::get().to(get_left_icon))
@@ -149,6 +151,7 @@ async fn run() -> anyhow::Result<()> {
             .route("/leftAngle.png", web::get().to(get_left_angle_icon))
             .route("/rightAngle.png", web::get().to(get_right_angle_icon))
             .route("/unknown.png", web::get().to(get_unknown_icon))
+            .route("/clear_cache", web::get().to(clear_cache))
     })
     .bind((args.host, args.port))?
     .run()

@@ -166,6 +166,10 @@
 		errorMessage = null;
 	}
 
+	async function onClearCache() {
+		const res = await fetch(`${baseUrl}/clear_cache`);
+	}
+
 	async function initialize() {
 		// Get the session before fetching the first file list.
 		await createOrRestoreSession();
@@ -184,6 +188,7 @@
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
+		<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
 		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
 		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>
 		<img class="icon" alt="previous (H)" id="leftButton" src={`${baseUrl}/left.png`}>
