@@ -50,6 +50,8 @@
 	let unlockAttemptPath = null;
 
 	let errorMessage = null;
+	let userName = "";
+	let userIsAdmin = false;
 
 	async function createOrRestoreSession() {
 		const res = await fetch(`${baseUrl}/sessions`, {
@@ -57,6 +59,19 @@
 			credentials: "include",
 		});
 		if(!res.ok) errorMessage = await res.text();
+	}
+
+	async function getUserStatus() {
+		const res = await fetch(`${baseUrl}/user_status`, {
+			credentials: "include",
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		let result = await res.json();
+		userName = result.logged_in ? result.name : "";
+		userIsAdmin = result.is_admin;
 	}
 
 	function setFocus(evt){
@@ -291,6 +306,7 @@
 	async function initialize() {
 		// Get the session before fetching the first file list.
 		await createOrRestoreSession();
+		getUserStatus();
 		loadPage(rootPath);
 	}
 </script>
@@ -314,11 +330,20 @@
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
+		<span class="userName">{userName}</span>
 		<img class="icon" alt="login" src={userImage} on:click={onStartLogin}>
-		<img class="icon" alt="logout" src={userLogoutImage} on:click={onStartLogout}>
-		<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
-		<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>
-		<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
+		{#if userName}
+			<img class="icon" alt="logout" src={userLogoutImage} on:click={onStartLogout}>
+		{/if}
+		{#if userIsAdmin}
+			<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
+		{/if}
+		{#if userName}
+			<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>
+		{/if}
+		{#if userIsAdmin}
+			<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
+		{/if}
 		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
 		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>
 		<img class="icon" alt="previous (H)" id="leftButton" src={`${baseUrl}/left.png`}>
@@ -387,7 +412,13 @@
 		position: absolute;
 		top: 0;
 		right: 0;
+		height: 48px;
 		margin-right: 20px;
+		display: flex;
+	}
+
+	.userName {
+		margin: auto;
 	}
 
 	.scrollContents {

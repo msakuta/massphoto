@@ -4,13 +4,13 @@ use actix_web::{
     HttpRequest, Result,
 };
 use rusqlite::{params, Connection};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 
 use crate::{
     db_utils::table_exists,
     map_err,
-    session::{find_session, find_session_mut, get_valid_session, get_valid_session_mut},
+    session::{get_valid_session, get_valid_session_mut},
     MyData,
 };
 
@@ -55,6 +55,42 @@ pub(crate) async fn create_user(
     )
     .map_err(map_err)?;
     Ok("Ok".to_string())
+}
+
+#[derive(Serialize)]
+struct StatusUserResult {
+    logged_in: bool,
+    is_admin: bool,
+    name: Option<String>,
+}
+
+#[actix_web::get("/user_status")]
+pub(crate) async fn status_user(
+    data: web::Data<MyData>,
+    req: HttpRequest,
+) -> Result<web::Json<StatusUserResult>> {
+    let sessions = data.sessions.read().unwrap();
+    let session = get_valid_session(&req, &sessions)?;
+    let Some(user_id) = session.user_id else {
+        return Ok(web::Json(StatusUserResult {
+            logged_in: false,
+            is_admin: false,
+            name: None,
+        }));
+    };
+    let conn = data.conn.lock().unwrap();
+    let (name, is_admin) = conn
+        .query_row_and_then(
+            "SELECT name, is_admin FROM user WHERE id = ?1",
+            [user_id],
+            |q| -> rusqlite::Result<(String, bool)> { Ok((q.get(0)?, q.get(1)?)) },
+        )
+        .map_err(map_err)?;
+    Ok(web::Json(StatusUserResult {
+        logged_in: true,
+        is_admin,
+        name: Some(name),
+    }))
 }
 
 #[actix_web::post("/users/{name}/login")]
