@@ -170,14 +170,14 @@
 			errorMessage = "The retyped password does not match. Try again";
 			return;
 		}
-		const name = evt.detail.name;
-		const res = await fetch(`${baseUrl}/users/${name}`, {
+		const res = await fetch(`${baseUrl}/users`, {
 			method: "POST",
 			credentials: "include",
 			headers: {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
+				name: evt.detail.name,
 				password: evt.detail.password
 			})
 		});

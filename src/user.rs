@@ -13,11 +13,6 @@ use crate::{
     MyData,
 };
 
-#[derive(Debug, Deserialize)]
-struct CreateUserParams {
-    password: String,
-}
-
 pub(crate) fn init_table(conn: &Connection) -> anyhow::Result<()> {
     if !table_exists(&conn, "user") {
         conn.execute(
@@ -80,19 +75,31 @@ pub(crate) async fn list_users(
     Ok(web::Json(users))
 }
 
-#[actix_web::post("/users/{name}")]
+#[derive(Debug, Deserialize)]
+struct CreateUserParams {
+    name: String,
+    password: String,
+}
+
+/// Creates a user and returns the newly created user id
+#[actix_web::post("/users")]
 pub(crate) async fn create_user(
     data: web::Data<MyData>,
-    name: web::Path<String>,
     params: web::Json<CreateUserParams>,
+    req: HttpRequest,
 ) -> Result<String> {
+    let sessions = data.sessions.read().unwrap();
+    let session = get_valid_session(&req, &sessions)?;
+    if !session.is_admin {
+        return Err(error::ErrorForbidden("Only the admin can add a user"));
+    }
     let conn = data.conn.lock().unwrap();
     conn.execute(
         "INSERT INTO user (name, password, is_admin) VALUES (?1, ?2, FALSE)",
-        params![name.as_ref(), sha256::digest(&params.password)],
+        params![params.name, sha256::digest(&params.password)],
     )
     .map_err(map_err)?;
-    Ok("Ok".to_string())
+    Ok(conn.last_insert_rowid().to_string())
 }
 
 #[actix_web::delete("/users/{id}")]
