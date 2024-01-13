@@ -3,7 +3,7 @@
 
     const dispatch = createEventDispatcher();
 
-    export let message = "User name:";
+    export let message = "User Login";
     let name = "";
     let password = "";
 
@@ -14,7 +14,8 @@
 
 <div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
-        <label>{message}
+        <h2>{message}</h2>
+        <label>User name:
             <input type="text" bind:value={name}>
         </label>
         <label>Password:

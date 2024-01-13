@@ -3,7 +3,7 @@
 
     const dispatch = createEventDispatcher();
 
-    export let message = "Change password:";
+    export let message = "Change Password";
     let password = "";
     let passwordCheck = "";
 
@@ -14,7 +14,8 @@
 
 <div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
-        <label>{message}
+        <h2>{message}</h2>
+        <label>New password:
             <input type="password" bind:value={password}>
         </label>
         <label>Retype password:
