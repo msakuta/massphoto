@@ -136,6 +136,7 @@
 			errorMessage = `User add failed: ${response}`;
 			return;
 		}
+		showingUserAddDialog = false;
 	}
 
 	function onCancelUserAdd() {

@@ -18,6 +18,8 @@ use crate::{cache::CachePayload, map_err, MyData};
 
 pub(crate) struct Session {
     pub user_id: Option<usize>,
+    /// Should we query this every time?
+    pub is_admin: bool,
     pub auth_dirs: HashSet<PathBuf>,
 }
 
@@ -25,6 +27,7 @@ impl Session {
     fn new() -> Self {
         Self {
             user_id: None,
+            is_admin: false,
             auth_dirs: HashSet::new(),
         }
     }

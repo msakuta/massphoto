@@ -87,9 +87,13 @@ pub(crate) fn authorized(path: &Path, cache_entry: &CacheEntry, session: Option<
     if !cache_entry.is_locked() {
         return true;
     }
-    session
-        .map(|session| session.user_id.is_some() || session.auth_dirs.contains(path))
-        .unwrap_or(false)
+    let Some(session) = session else {
+        return false;
+    };
+    if session.is_admin {
+        return true;
+    }
+    session.auth_dirs.contains(path)
 }
 
 pub(crate) async fn index() -> HttpResponse {

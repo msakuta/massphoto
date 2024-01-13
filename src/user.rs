@@ -20,15 +20,19 @@ pub(crate) fn init_table(conn: &Connection) -> anyhow::Result<()> {
             "CREATE TABLE user (
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
-                password TEXT
+                password TEXT,
+                is_admin BOOL NOT NULL
             )",
             [],
         )
         .unwrap();
 
         // Add the admin account without a password.
-        conn.execute(r#"INSERT INTO user (name) VALUES ("admin")"#, [])?;
-        println!("table \"album\" created!");
+        conn.execute(
+            r#"INSERT INTO user (name, is_admin) VALUES ("admin", TRUE)"#,
+            [],
+        )?;
+        println!("table \"user\" created!");
     }
     Ok(())
 }
@@ -41,7 +45,7 @@ pub(crate) async fn create_user(
 ) -> Result<String> {
     let conn = data.conn.lock().unwrap();
     conn.execute(
-        "INSERT INTO user (name, password) VALUES (?1, ?2)",
+        "INSERT INTO user (name, password, is_admin) VALUES (?1, ?2, FALSE)",
         params![name.as_ref(), Sha1::digest(&params.password).as_slice()],
     )
     .map_err(map_err)?;
@@ -63,11 +67,13 @@ pub(crate) async fn login_user(
     };
     println!("Attempt logging in: {name:?}");
     let conn = data.conn.lock().unwrap();
-    let (id, db_passwd): (usize, Option<Vec<u8>>) = conn
+    let (id, db_passwd, is_admin) = conn
         .query_row_and_then(
-            "SELECT id, password FROM user WHERE name = ?1",
+            "SELECT id, password, is_admin FROM user WHERE name = ?1",
             [name.into_inner()],
-            |q| -> rusqlite::Result<(usize, Option<Vec<u8>>)> { Ok((q.get(0)?, q.get(1)?)) },
+            |q| -> rusqlite::Result<(usize, Option<Vec<u8>>, bool)> {
+                Ok((q.get(0)?, q.get(1)?, q.get(2)?))
+            },
         )
         .map_err(|err| match err {
             rusqlite::Error::QueryReturnedNoRows => error::ErrorBadRequest("User not found"),
@@ -81,5 +87,6 @@ pub(crate) async fn login_user(
         return Err(error::ErrorNotAcceptable("Incorrect password"));
     }
     session.user_id = Some(id);
+    session.is_admin = is_admin;
     Ok("Ok")
 }
