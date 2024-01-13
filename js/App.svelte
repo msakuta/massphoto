@@ -12,7 +12,6 @@
 	import UserLogout from './UserLogout.svelte';
 	import UserAdd from './UserAdd.svelte';
 	import UserList from './UserList.svelte';
-	import DeleteConfirm from './DeleteConfirm.svelte';
 	import ChangePassword from './ChangePassword.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
@@ -274,32 +273,21 @@
 		showingUserList = true;
 	}
 
-	let deletingId = null;
-
-	function onStartUserDelete(evt) {
-		deletingId = evt.detail;
-	}
-
 	function onUserListClose() {
 		showingUserList = false;
 	}
 
-	async function onDeleteConfirmOk() {
+	async function onUserDelete(evt) {
+		const deletingId = evt.detail;
 		const res = await fetch(`${baseUrl}/users/${deletingId}`, {
 			method: "DELETE",
 			credentials: "include",
 		});
 		if(!res.ok){
 			errorMessage = await res.text();
-			deletingId = null;
 			return;
 		}
-		deletingId = null;
 		onUserList();
-	}
-
-	function onDeleteConfirmCancel() {
-		deletingId = null;
 	}
 
 	function onPrevImage() {
@@ -374,10 +362,7 @@
 {/if}
 
 {#if showingUserList}
-{#if deletingId !== null}
-<DeleteConfirm message={"Hey"} on:ok={onDeleteConfirmOk} on:cancel={onDeleteConfirmCancel}/>
-{/if}
-<UserList {users} on:close={onUserListClose} on:delete={onStartUserDelete}/>
+<UserList {users} on:close={onUserListClose} on:delete={onUserDelete}/>
 {/if}
 
 <div class="header">

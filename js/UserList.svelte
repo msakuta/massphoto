@@ -1,24 +1,41 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import DeleteConfirm from './DeleteConfirm.svelte';
 
     const dispatch = createEventDispatcher();
 
     export let users = [];
 
     function close() { dispatch('close') }
+
+    let deletingUser = null;
+
+    function onDeleteOk() {
+        dispatch('delete', deletingUser.id);
+        deletingUser = null;
+    }
+
+    function onDeleteConfirmCancel(evt) {
+        deletingUser = null;
+        evt.stopPropagation();
+    }
 </script>
 
 <div class="back" on:click={close}>
+    {#if deletingUser !== null}
+    <DeleteConfirm userName={deletingUser.name} on:ok={onDeleteOk} on:cancel={onDeleteConfirmCancel}/>
+    {/if}
+
     <div class="modal" on:click|stopPropagation={() => 0}>
         <h2>User List</h2>
         <table>
             <tr><th>Id</th><th>Name</th><th>Password</th><th>Delete</th></tr>
-            {#each users as user}
+            {#each users as user (user.id)}
             <tr>
                 <td>{user.id}</td>
                 <td>{user.name}</td>
                 <td>{user.password}</td>
-                <td><button on:click={dispatch('delete', user.id)}>Delete</button></td>
+                <td><button on:click={() => deletingUser = user}>Delete</button></td>
             </tr>
             {/each}
         </table>
@@ -49,7 +66,7 @@
         max-width: 500px;
         margin: auto;
         padding: 20px;
-        background-color: #ffffff;
+        background-color: #f3f3f3;
         text-align: center;
     }
 

@@ -3,18 +3,19 @@
 
     const dispatch = createEventDispatcher();
 
-    export let message = "";
+    export let userName = "";
+    $: message = `Do you want to delete user "${userName}"?`;
 
-    let ok = () => dispatch('ok');
-    function cancel() { dispatch('cancel') }
+    const cancel = () => dispatch('cancel');
 </script>
 
-<div class="back" on:click={cancel}>
+<div class="back" on:click|stopPropagation={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
+        <h2>Confirm</h2>
         {message}
         <div>
-            <button value="Ok" on:click={ok}>Ok</button>
-            <button value="Cancel" on:click={cancel}>Cancel</button>
+            <button value="Ok" on:click|stopPropagation={() => dispatch('ok')}>Ok</button>
+            <button value="Cancel" on:click|stopPropagation={cancel}>Cancel</button>
         </div>
     </div>
 </div>
