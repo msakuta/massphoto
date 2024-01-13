@@ -1,4 +1,8 @@
 <script>
+    import lockImage from '../assets/lock.png';
+    import unknownImage from '../assets/unknown.png';
+    import directoryImage from '../assets/directory.png';
+    import videoImage from '../assets/video.png';
     import { createEventDispatcher } from 'svelte';
     import { joinPath } from './joinPath';
 
@@ -13,10 +17,10 @@
     function imagePath(){
         if(dir){
             if(dir.locked){
-                return `${baseUrl}/lock.png`;
+                return lockImage;
             }
             if(!dir.image_first){
-                return `${baseUrl}/unknown.png`;
+                return unknownImage;
             }
             else{
                 return `${baseUrl}/thumbs/${joinPath(rootPath, joinPath(dir.path, dir.image_first))}`;
@@ -24,7 +28,7 @@
         }
         else{
             if(image.video){
-                return `${baseUrl}/video.png`;
+                return videoImage;
             }
             return `${baseUrl}/thumbs/${joinPath(rootPath, image.path)}`;
         }
@@ -52,7 +56,7 @@
 
     function dirStyle() {
         if(dir)
-            return `background-image: url(${baseUrl}/directory.png)`;
+            return `background-image: url(${directoryImage})`;
         else
             return "";
     }

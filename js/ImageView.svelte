@@ -1,4 +1,11 @@
 <script>
+    import closeImage from '../assets/close.png';
+    import magnifyImage from '../assets/magnify.png';
+    import minifyImage from '../assets/minify.png';
+    import fitImage from '../assets/fit.png';
+    import leftAngleImage from '../assets/leftAngle.png';
+    import rightAngleImage from '../assets/rightAngle.png';
+    import commentButtonImage from '../assets/comment.png';
     import { createEventDispatcher, tick } from 'svelte';
 
     const dispatch = createEventDispatcher();
@@ -12,19 +19,12 @@
     export let imageRelPath = "";
 
     export let buttonImageBasePath = "";
-    let closePath = `${buttonImageBasePath}/close.png`;
     let closeButton;
-    let magnifyPath = `${buttonImageBasePath}/magnify.png`;
     let magnifyButton;
-    let minifyPath = `${buttonImageBasePath}/minify.png`;
     let minifyButton;
-    let fitPath = `${buttonImageBasePath}/fit.png`;
     let fitButton;
-    let leftAnglePath = `${buttonImageBasePath}/leftAngle.png`;
     let prevButton;
-    let rightAnglePath = `${buttonImageBasePath}/rightAngle.png`;
     let nextButton;
-    let commentButtonPath = `${buttonImageBasePath}/comment.png`;
     let commentButton;
 
     let commentDiv;
@@ -173,14 +173,14 @@
         on:mouseup={mouseup} on:contextmenu={contextmenu} on:mousedown={mousedown} on:mousemove={mousemove} on:mouseleave={mouseleave}>
     <img style="transform: {imageTransform}" class="zoomInt noPointer" src={imagePath} alt={imagePath} on:load={getImageSize}>
     <div class="buttonContainer">
-        <img class="button barButton" bind:this={closeButton} src={closePath} alt="Close" on:click={close}>
-        <img class="button barButton" style="top: 48px" bind:this={magnifyButton} src={magnifyPath} alt="Magnify" on:click={magnify}>
-        <img class="button barButton" style="top: 96px" bind:this={minifyButton} src={minifyPath} alt="Minify" on:click={minify}>
-        <img class="button barButton" style="top: 144px" bind:this={fitButton} src={fitPath} alt="Fit" on:click={fit}>
+        <img class="button barButton" bind:this={closeButton} src={closeImage} alt="Close" on:click={close}>
+        <img class="button barButton" style="top: 48px" bind:this={magnifyButton} src={magnifyImage} alt="Magnify" on:click={magnify}>
+        <img class="button barButton" style="top: 96px" bind:this={minifyButton} src={minifyImage} alt="Minify" on:click={minify}>
+        <img class="button barButton" style="top: 144px" bind:this={fitButton} src={fitImage} alt="Fit" on:click={fit}>
     </div>
-    <img class="button commentButton" bind:this={commentButton} src={commentButtonPath} alt="Comment" on:click={toggleComment}>
-    <img class="button prevButton" bind:this={prevButton} src={leftAnglePath} alt="Prev" on:click={dispatch('prev', imagePath)}>
-    <img class="button nextButton" bind:this={nextButton} src={rightAnglePath} alt="Next" on:click={next}>
+    <img class="button commentButton" bind:this={commentButton} src={commentButtonImage} alt="Comment" on:click={toggleComment}>
+    <img class="button prevButton" bind:this={prevButton} src={leftAngleImage} alt="Prev" on:click={dispatch('prev', imagePath)}>
+    <img class="button nextButton" bind:this={nextButton} src={rightAngleImage} alt="Next" on:click={next}>
     {#if commentEditMode}
         <textarea class="textPosition" bind:this={commentEdit} on:keydown={onCommentKeyDown} on:focusout={focusout} bind:value={commentValue}></textarea>
     {:else if commentVisible}

@@ -4,6 +4,13 @@
 	import userAddImage from '../assets/userAdd.png';
 	import usersImage from '../assets/users.png';
 	import userLogoutImage from '../assets/userLogout.png';
+	import clearCacheImage from '../assets/clearCache.png';
+	import homeImage from '../assets/home.png';
+	import upImage from '../assets/up.png';
+	import leftImage from '../assets/left.png';
+	import rightImage from '../assets/right.png';
+	import lockImage from '../assets/lock.png';
+
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
@@ -381,13 +388,13 @@
 			<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>
 		{/if}
 		{#if userIsAdmin}
-			<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
+			<img class="icon" alt="clearcache" src={clearCacheImage} on:click={onClearCache}>
 		{/if}
-		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
-		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>
-		<img class="icon" alt="previous (H)" id="leftButton" src={`${baseUrl}/left.png`}>
-		<img class="icon" alt="next (K)" id="rightButton" src={`${baseUrl}/right.png`}>
-		<img class="icon" alt="home" src={`${baseUrl}/lock.png`} on:click={onLock}>
+		<img class="icon" alt="home" id="homeButton" src={homeImage} on:click={onHome}>
+		<img class="icon" alt="up (U)" id="upButton" src={upImage} on:click={onUp}>
+		<img class="icon" alt="previous (H)" id="leftButton" src={leftImage}>
+		<img class="icon" alt="next (K)" id="rightButton" src={rightImage}>
+		<img class="icon" alt="home" src={lockImage} on:click={onLock}>
 	</div>
 </div>
 

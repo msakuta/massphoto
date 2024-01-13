@@ -70,31 +70,6 @@ fn map_err(err: impl ToString) -> Error {
     error::ErrorInternalServerError(err.to_string())
 }
 
-macro_rules! implement_static_bytes {
-    ($func:ident, $path:literal) => {
-        async fn $func() -> &'static [u8] {
-            include_bytes!($path)
-        }
-    };
-}
-
-implement_static_bytes!(get_clear_cache_icon, "../assets/clearCache.png");
-implement_static_bytes!(get_home_icon, "../assets/home.png");
-implement_static_bytes!(get_up_icon, "../assets/up.png");
-implement_static_bytes!(get_left_icon, "../assets/left.png");
-implement_static_bytes!(get_right_icon, "../assets/right.png");
-implement_static_bytes!(get_lock_icon, "../assets/lock.png");
-implement_static_bytes!(get_directory_icon, "../assets/directory.png");
-implement_static_bytes!(get_video_icon, "../assets/video.png");
-implement_static_bytes!(get_close_icon, "../assets/close.png");
-implement_static_bytes!(get_magnify_icon, "../assets/magnify.png");
-implement_static_bytes!(get_minify_icon, "../assets/minify.png");
-implement_static_bytes!(get_fit_icon, "../assets/fit.png");
-implement_static_bytes!(get_comment_icon, "../assets/comment.png");
-implement_static_bytes!(get_left_angle_icon, "../assets/leftAngle.png");
-implement_static_bytes!(get_right_angle_icon, "../assets/rightAngle.png");
-implement_static_bytes!(get_unknown_icon, "../assets/unknown.png");
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     run()
@@ -147,22 +122,6 @@ async fn run() -> anyhow::Result<()> {
             .route("/albums/{file:.*}/lock", web::post().to(set_album_lock))
             .route("/albums/{file:.*}/auth", web::post().to(authorize_album))
             .route("/sessions", web::get().to(create_session))
-            .route("/clearCache.png", web::get().to(get_clear_cache_icon))
-            .route("/home.png", web::get().to(get_home_icon))
-            .route("/up.png", web::get().to(get_up_icon))
-            .route("/left.png", web::get().to(get_left_icon))
-            .route("/right.png", web::get().to(get_right_icon))
-            .route("/lock.png", web::get().to(get_lock_icon))
-            .route("/directory.png", web::get().to(get_directory_icon))
-            .route("/video.png", web::get().to(get_video_icon))
-            .route("/close.png", web::get().to(get_close_icon))
-            .route("/magnify.png", web::get().to(get_magnify_icon))
-            .route("/minify.png", web::get().to(get_minify_icon))
-            .route("/fit.png", web::get().to(get_fit_icon))
-            .route("/comment.png", web::get().to(get_comment_icon))
-            .route("/leftAngle.png", web::get().to(get_left_angle_icon))
-            .route("/rightAngle.png", web::get().to(get_right_angle_icon))
-            .route("/unknown.png", web::get().to(get_unknown_icon))
             .route("/clear_cache", web::get().to(clear_cache))
     })
     .bind((args.host, args.port))?
