@@ -98,7 +98,8 @@
 			body: evt.detail.password,
 		});
 		if (!res.ok) {
-			errorMessage = "User login failed";
+			const response = await res.text();
+			errorMessage = `User login failed: ${response}`;
 			return;
 		}
 		location.reload();
@@ -131,7 +132,8 @@
 			})
 		});
 		if (!res.ok) {
-			errorMessage = "User add failed";
+			const response = await res.text();
+			errorMessage = `User add failed: ${response}`;
 			return;
 		}
 	}

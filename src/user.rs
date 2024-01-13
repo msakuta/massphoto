@@ -7,18 +7,7 @@ use rusqlite::{params, Connection};
 use serde::Deserialize;
 use sha1::{Digest, Sha1};
 
-use crate::{
-    db_utils::table_exists,
-    map_err,
-    session::{find_session, find_session_mut},
-    MyData,
-};
-
-struct User {
-    id: usize,
-    name: String,
-    passwd: Vec<u8>,
-}
+use crate::{db_utils::table_exists, map_err, session::find_session_mut, MyData};
 
 #[derive(Debug, Deserialize)]
 struct CreateUserParams {
@@ -68,7 +57,9 @@ pub(crate) async fn login_user(
 ) -> Result<&'static str> {
     let mut sessions = data.sessions.write().unwrap();
     let Some(session) = find_session_mut(&req, &mut sessions) else {
-        return Err(error::ErrorBadRequest("Create a session first"));
+        return Err(error::ErrorBadRequest(
+            "Session expired. Please reload the browser.",
+        ));
     };
     println!("Attempt logging in: {name:?}");
     let conn = data.conn.lock().unwrap();
@@ -86,6 +77,7 @@ pub(crate) async fn login_user(
         .map(|db_passwd| db_passwd != Sha1::digest(passwd).as_slice())
         .unwrap_or(false)
     {
+        // TODO: is it safe to respond that the user name exists?
         return Err(error::ErrorNotAcceptable("Incorrect password"));
     }
     session.user_id = Some(id);
