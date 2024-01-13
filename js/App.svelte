@@ -236,6 +236,10 @@
 			credentials: "include",
 			body: password,
 		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
 		const text = await res.text();
 		console.log(`lock res: ${text}`);
 		showingLockDialog = false;
@@ -394,7 +398,9 @@
 		<img class="icon" alt="up (U)" id="upButton" src={upImage} on:click={onUp}>
 		<img class="icon" alt="previous (H)" id="leftButton" src={leftImage}>
 		<img class="icon" alt="next (K)" id="rightButton" src={rightImage}>
-		<img class="icon" alt="home" src={lockImage} on:click={onLock}>
+		{#if userName}
+			<img class="icon" alt="lock" src={lockImage} on:click={onLock}>
+		{/if}
 	</div>
 </div>
 

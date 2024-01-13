@@ -230,6 +230,9 @@ pub(crate) async fn set_album_lock(
 ) -> Result<HttpResponse> {
     let sessions = data.sessions.read().map_err(map_err)?;
     let session = get_valid_session(&req, &sessions)?;
+    if session.user_id.is_none() {
+        return Err(error::ErrorBadRequest("You need to login to lock an album"));
+    }
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let root_dir = data.path.lock().map_err(map_err)?;
     let mut cache = data.cache.lock().map_err(map_err)?;

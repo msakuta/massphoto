@@ -64,13 +64,11 @@ pub(crate) fn load_cache(
 
     let mut stmt = conn.prepare("SELECT path, desc, password FROM album WHERE path LIKE ?1")?;
     let album_iter = stmt.query_map([format!("{}%", abs_path)], |row| {
-        let bytes: Vec<u8> = row.get(2)?;
-        let s = String::from_utf8(bytes).unwrap();
         Ok(Album {
             path: row.get(0)?,
             modified: 0.,
             desc: row.get(1).ok(),
-            password: s,
+            password: row.get(2)?,
         })
     })?;
 
