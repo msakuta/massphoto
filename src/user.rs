@@ -3,7 +3,7 @@ use actix_web::{
     web::{self, Bytes},
     HttpRequest, Result,
 };
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 use serde::Deserialize;
 use sha1::{Digest, Sha1};
 
@@ -22,8 +22,7 @@ struct User {
 
 #[derive(Debug, Deserialize)]
 struct CreateUserParams {
-    name: String,
-    passwd: String,
+    password: String,
 }
 
 pub(crate) fn init_table(conn: &Connection) -> anyhow::Result<()> {
@@ -45,15 +44,16 @@ pub(crate) fn init_table(conn: &Connection) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[actix_web::post("/users")]
+#[actix_web::post("/users/{name}")]
 pub(crate) async fn create_user(
     data: web::Data<MyData>,
+    name: web::Path<String>,
     params: web::Json<CreateUserParams>,
 ) -> Result<String> {
     let conn = data.conn.lock().unwrap();
     conn.execute(
         "INSERT INTO user (name, password) VALUES (?1, ?2)",
-        [&params.name, &params.passwd],
+        params![name.as_ref(), Sha1::digest(&params.password).as_slice()],
     )
     .map_err(map_err)?;
     Ok("Ok".to_string())

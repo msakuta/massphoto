@@ -1,10 +1,13 @@
 <script>
 	import keyImage from '../assets/key.png';
+	import userImage from '../assets/user.png';
+	import userAddImage from '../assets/userAdd.png';
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
 	import PasswordEntry from './PasswordEntry.svelte';
 	import UserLogin from './UserLogin.svelte';
+	import UserAdd from './UserAdd.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
 
@@ -83,7 +86,7 @@
 
 	let showingUserLoginDialog = false;
 
-	async function onStartLogin() {
+	function onStartLogin() {
 		showingUserLoginDialog = true;
 	}
 
@@ -103,6 +106,38 @@
 
 	async function onCancelUserLogin() {
 		showingUserLoginDialog = false;
+	}
+
+	let showingUserAddDialog = false;
+
+	function onStartUserAdd() {
+		showingUserAddDialog = true;
+	}
+
+	async function onUserAdd(evt) {
+		if(evt.detail.password !== evt.detail.passwordCheck){
+			errorMessage = "The retyped password does not match. Try again";
+			return;
+		}
+		const name = evt.detail.name;
+		const res = await fetch(`${baseUrl}/users/${name}`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				password: evt.detail.password
+			})
+		});
+		if (!res.ok) {
+			errorMessage = "User add failed";
+			return;
+		}
+	}
+
+	function onCancelUserAdd() {
+		showingUserAddDialog = false;
 	}
 
 	function onLock() {
@@ -207,6 +242,8 @@
 <ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
 {:else if showingUserLoginDialog}
 <UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
+{:else if showingUserAddDialog}
+<UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
 {:else if showingLockDialog}
 <PasswordEntry on:submit={lockWithPassword} on:cancel={cancelPassword}/>
 {:else if showingUnlockDialog}
@@ -216,7 +253,8 @@
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
-		<img class="icon" alt="login" src={keyImage} on:click={onStartLogin}>
+		<img class="icon" alt="login" src={userImage} on:click={onStartLogin}>
+		<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
 		<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
 		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
 		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>
