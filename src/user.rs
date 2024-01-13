@@ -96,7 +96,19 @@ pub(crate) async fn create_user(
 }
 
 #[actix_web::delete("/users/{id}")]
-pub(crate) async fn delete_user(data: web::Data<MyData>, id: web::Path<usize>) -> Result<String> {
+pub(crate) async fn delete_user(
+    data: web::Data<MyData>,
+    id: web::Path<usize>,
+    req: HttpRequest,
+) -> Result<String> {
+    let sessions = data.sessions.read().unwrap();
+    let session = get_valid_session(&req, &sessions)?;
+    if !session.is_admin {
+        return Err(error::ErrorForbidden("Only the admin can delete a user"));
+    }
+    if session.user_id == Some(*id) {
+        return Err(error::ErrorBadRequest("You cannot delete yourself"));
+    }
     let conn = data.conn.lock().unwrap();
     conn.execute("DELETE FROM user WHERE id = ?1", params![id.as_ref()])
         .map_err(map_err)?;

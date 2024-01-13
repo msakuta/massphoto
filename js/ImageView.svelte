@@ -18,7 +18,6 @@
 
     export let imageRelPath = "";
 
-    export let buttonImageBasePath = "";
     let closeButton;
     let magnifyButton;
     let minifyButton;
