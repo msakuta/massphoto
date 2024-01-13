@@ -1,4 +1,5 @@
 <script>
+	import keyImage from '../assets/key.png';
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
@@ -215,7 +216,7 @@
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
-		<img class="icon" alt="login" src={`${baseUrl}/lock.png`} on:click={onStartLogin}>
+		<img class="icon" alt="login" src={keyImage} on:click={onStartLogin}>
 		<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
 		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
 		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>
