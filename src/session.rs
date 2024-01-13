@@ -40,11 +40,13 @@ pub(crate) async fn create_session(data: web::Data<MyData>, req: HttpRequest) ->
     if find_session(&req, &sessions).is_some() {
         return HttpResponse::Ok().body("Ok");
     }
-    let next_id = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("Time always exist since UNIX_EPOCH")
-        .as_secs_f64()
-        .to_string();
+    let next_id = sha256::digest(
+        &std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("Time always exist since UNIX_EPOCH")
+            .as_nanos()
+            .to_le_bytes(),
+    );
     sessions.insert(next_id.clone(), Session::new());
 
     let cookie = Cookie::build("masaPhotoSessionId", next_id)
