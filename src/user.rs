@@ -5,7 +5,6 @@ use actix_web::{
 };
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use sha1::{Digest, Sha1};
 
 use crate::{
     db_utils::table_exists,
@@ -61,7 +60,9 @@ pub(crate) async fn list_users(
     }
     let conn = data.conn.lock().unwrap();
     let mut stmt = conn
-        .prepare("SELECT id, name, length(password) != 0, is_admin FROM user")
+        .prepare(
+            "SELECT id, name, password is not null and length(password) != 0, is_admin FROM user",
+        )
         .map_err(map_err)?;
     let users: Vec<_> = stmt
         .query_map([], |row| {
@@ -88,7 +89,7 @@ pub(crate) async fn create_user(
     let conn = data.conn.lock().unwrap();
     conn.execute(
         "INSERT INTO user (name, password, is_admin) VALUES (?1, ?2, FALSE)",
-        params![name.as_ref(), Sha1::digest(&params.password).as_slice()],
+        params![name.as_ref(), sha256::digest(&params.password)],
     )
     .map_err(map_err)?;
     Ok("Ok".to_string())
@@ -153,7 +154,7 @@ pub(crate) async fn login_user(
         .query_row_and_then(
             "SELECT id, password, is_admin FROM user WHERE name = ?1",
             [name.into_inner()],
-            |q| -> rusqlite::Result<(usize, Option<Vec<u8>>, bool)> {
+            |q| -> rusqlite::Result<(usize, Option<String>, bool)> {
                 Ok((q.get(0)?, q.get(1)?, q.get(2)?))
             },
         )
@@ -162,7 +163,7 @@ pub(crate) async fn login_user(
             e => map_err(e),
         })?;
     if db_passwd
-        .map(|db_passwd| db_passwd != Sha1::digest(passwd).as_slice())
+        .map(|db_passwd| db_passwd != sha256::digest(passwd.as_ref()))
         .unwrap_or(false)
     {
         // TODO: is it safe to respond that the user name exists?
@@ -200,7 +201,7 @@ pub(crate) async fn set_user_password(
     let conn = data.conn.lock().map_err(map_err)?;
     conn.execute(
         "UPDATE user SET password = ?1 WHERE id = ?2",
-        params![Sha1::digest(passwd).as_slice(), user_id],
+        params![sha256::digest(passwd.as_ref()), user_id],
     )
     .map_err(map_err)?;
     Ok("Ok")

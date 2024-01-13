@@ -12,7 +12,6 @@ use actix_web::{
     web::{self, Bytes},
     HttpRequest, HttpResponse,
 };
-use sha1::{Digest, Sha1};
 
 use crate::{cache::CachePayload, map_err, MyData};
 
@@ -64,16 +63,6 @@ pub(crate) async fn create_session(data: web::Data<MyData>, req: HttpRequest) ->
 }
 
 pub(crate) fn find_session<'a>(req: &HttpRequest, sessions: &'a Sessions) -> Option<&'a Session> {
-    // if let Some(cookie) = req.headers().get("Cookie") {
-    //     println!("Got Cookie header! {:?}", cookie.to_str());
-    // }
-    // let cookies = req.cookies();
-    // println!("Cookies: {cookies:?}");
-    // if let Ok(cookies) = cookies {
-    //     for (i, cookie) in cookies.iter().enumerate() {
-    //         println!("  Cookie[{i}]: {cookie:?}");
-    //     }
-    // }
     req.cookie("masaPhotoSessionId")
         .and_then(|cookie| sessions.get(cookie.value()))
 }
@@ -128,7 +117,7 @@ pub(crate) async fn authorize_album(
         return Err(error::ErrorBadRequest("File cannot be locked"));
     };
 
-    if album.password_hash == Sha1::digest(password).as_slice() {
+    if album.password_hash == sha256::digest(password).as_bytes() {
         session.auth_dirs.insert(abs_path);
     } else {
         return Err(error::ErrorNotAcceptable("Incorrect Password"));

@@ -14,7 +14,6 @@ use actix_web::{
     HttpRequest, HttpResponse, Result,
 };
 use image::{io::Reader as ImageReader, ImageOutputFormat};
-use sha1::{Digest, Sha1};
 
 use std::{
     fs,
@@ -239,7 +238,7 @@ pub(crate) async fn set_album_lock(
     let hash = if password.is_empty() {
         vec![]
     } else {
-        Sha1::digest(password).to_vec()
+        sha256::digest(password).into_bytes()
     };
 
     let abs_path = root_dir.join(&path);
