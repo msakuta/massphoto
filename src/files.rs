@@ -88,7 +88,7 @@ pub(crate) fn authorized(path: &Path, cache_entry: &CacheEntry, session: Option<
         return true;
     }
     session
-        .map(|session| session.auth_dirs.contains(path))
+        .map(|session| session.user_id.is_some() || session.auth_dirs.contains(path))
         .unwrap_or(false)
 }
 

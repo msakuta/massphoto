@@ -44,6 +44,8 @@ pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
         println!("table \"album\" created!");
     }
 
+    crate::user::init_table(&conn)?;
+
     println!("tables opened");
 
     let mut cache = HashMap::new();
@@ -107,7 +109,7 @@ pub(crate) fn write_db(
     Ok(())
 }
 
-fn table_exists(conn: &Connection, name: &str) -> bool {
+pub(crate) fn table_exists(conn: &Connection, name: &str) -> bool {
     conn.query_row(
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?1",
         [name],

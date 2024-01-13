@@ -3,6 +3,7 @@
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
 	import PasswordEntry from './PasswordEntry.svelte';
+	import UserLogin from './UserLogin.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
 
@@ -77,6 +78,30 @@
 			rootPath = "";
 			loadPage(rootPath);
 		}
+	}
+
+	let showingUserLoginDialog = false;
+
+	async function onStartLogin() {
+		showingUserLoginDialog = true;
+	}
+
+	async function onUserLogin(evt) {
+		const name = evt.detail.name;
+		const res = await fetch(`${baseUrl}/users/${name}/login`, {
+			method: "POST",
+			credentials: "include",
+			body: evt.detail.password,
+		});
+		if (!res.ok) {
+			errorMessage = "User login failed";
+			return;
+		}
+		location.reload();
+	}
+
+	async function onCancelUserLogin() {
+		showingUserLoginDialog = false;
 	}
 
 	function onLock() {
@@ -179,6 +204,8 @@
 
 {#if errorMessage !== null}
 <ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
+{:else if showingUserLoginDialog}
+<UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
 {:else if showingLockDialog}
 <PasswordEntry on:submit={lockWithPassword} on:cancel={cancelPassword}/>
 {:else if showingUnlockDialog}
@@ -188,6 +215,7 @@
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
+		<img class="icon" alt="login" src={`${baseUrl}/lock.png`} on:click={onStartLogin}>
 		<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
 		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
 		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>

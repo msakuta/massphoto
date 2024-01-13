@@ -17,12 +17,14 @@ use sha1::{Digest, Sha1};
 use crate::{cache::CachePayload, map_err, MyData};
 
 pub(crate) struct Session {
+    pub user_id: Option<usize>,
     pub auth_dirs: HashSet<PathBuf>,
 }
 
 impl Session {
     fn new() -> Self {
         Self {
+            user_id: None,
             auth_dirs: HashSet::new(),
         }
     }
