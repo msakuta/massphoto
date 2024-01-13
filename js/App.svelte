@@ -2,6 +2,7 @@
 	import keyImage from '../assets/key.png';
 	import userImage from '../assets/user.png';
 	import userAddImage from '../assets/userAdd.png';
+	import usersImage from '../assets/users.png';
 	import userLogoutImage from '../assets/userLogout.png';
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
@@ -10,6 +11,8 @@
 	import UserLogin from './UserLogin.svelte';
 	import UserLogout from './UserLogout.svelte';
 	import UserAdd from './UserAdd.svelte';
+	import UserList from './UserList.svelte';
+	import DeleteConfirm from './DeleteConfirm.svelte';
 	import ChangePassword from './ChangePassword.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
@@ -256,6 +259,49 @@
 		showingUnlockDialog = false;
 	}
 
+	let showingUserList = false;
+	let users = [];
+
+	async function onUserList() {
+		let res = await fetch(`${baseUrl}/users`, {
+			credentials: "include",
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		users = await res.json();
+		showingUserList = true;
+	}
+
+	let deletingId = null;
+
+	function onStartUserDelete(evt) {
+		deletingId = evt.detail;
+	}
+
+	function onUserListClose() {
+		showingUserList = false;
+	}
+
+	async function onDeleteConfirmOk() {
+		const res = await fetch(`${baseUrl}/users/${deletingId}`, {
+			method: "DELETE",
+			credentials: "include",
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			deletingId = null;
+			return;
+		}
+		deletingId = null;
+		onUserList();
+	}
+
+	function onDeleteConfirmCancel() {
+		deletingId = null;
+	}
+
 	function onPrevImage() {
 		const found = fileList.map((file, idx) => [file, idx]).find(([file, _]) => joinPath(rootPath, file.path) === selectedFile);
 		selectedFile = joinPath(rootPath, fileList[Math.max(0, found[1] - 1)].path);
@@ -327,6 +373,13 @@
 <PasswordEntry message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
 {/if}
 
+{#if showingUserList}
+{#if deletingId !== null}
+<DeleteConfirm message={"Hey"} on:ok={onDeleteConfirmOk} on:cancel={onDeleteConfirmCancel}/>
+{/if}
+<UserList {users} on:close={onUserListClose} on:delete={onStartUserDelete}/>
+{/if}
+
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
@@ -337,6 +390,7 @@
 		{/if}
 		{#if userIsAdmin}
 			<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
+			<img class="icon" alt="userList" src={usersImage} on:click={onUserList}>
 		{/if}
 		{#if userName}
 			<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>

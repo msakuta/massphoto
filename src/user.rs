@@ -42,6 +42,43 @@ pub(crate) fn init_table(conn: &Connection) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Serialize)]
+struct ListElementUser {
+    id: usize,
+    name: String,
+    password: bool,
+}
+
+#[actix_web::get("/users")]
+pub(crate) async fn list_users(
+    data: web::Data<MyData>,
+    req: HttpRequest,
+) -> Result<web::Json<Vec<ListElementUser>>> {
+    let sessions = data.sessions.read().unwrap();
+    let session = get_valid_session(&req, &sessions)?;
+    if !session.is_admin {
+        return Err(error::ErrorForbidden("Non-admin cannot list users"));
+    }
+    let conn = data.conn.lock().unwrap();
+    let mut stmt = conn
+        .prepare("SELECT id, name, length(password) != 0, is_admin FROM user")
+        .map_err(map_err)?;
+    let users: Vec<_> = stmt
+        .query_map([], |row| {
+            let id: usize = row.get(0)?;
+            let name: String = row.get(1)?;
+            Ok(ListElementUser {
+                id,
+                name,
+                password: row.get(2)?,
+            })
+        })
+        .map_err(map_err)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(map_err)?;
+    Ok(web::Json(users))
+}
+
 #[actix_web::post("/users/{name}")]
 pub(crate) async fn create_user(
     data: web::Data<MyData>,
@@ -54,6 +91,14 @@ pub(crate) async fn create_user(
         params![name.as_ref(), Sha1::digest(&params.password).as_slice()],
     )
     .map_err(map_err)?;
+    Ok("Ok".to_string())
+}
+
+#[actix_web::delete("/users/{id}")]
+pub(crate) async fn delete_user(data: web::Data<MyData>, id: web::Path<usize>) -> Result<String> {
+    let conn = data.conn.lock().unwrap();
+    conn.execute("DELETE FROM user WHERE id = ?1", params![id.as_ref()])
+        .map_err(map_err)?;
     Ok("Ok".to_string())
 }
 

@@ -5,14 +5,16 @@
 
     export let message = "";
 
-    function close() { dispatch('close') }
+    let ok = () => dispatch('ok');
+    function cancel() { dispatch('cancel') }
 </script>
 
-<div class="back" on:click={close}>
+<div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
         {message}
         <div>
-        <button value="Ok" on:click={close}>Ok</button>
+            <button value="Ok" on:click={ok}>Ok</button>
+            <button value="Cancel" on:click={cancel}>Cancel</button>
         </div>
     </div>
 </div>
@@ -28,7 +30,7 @@
         margin: 0;
         padding-top: 100px;
         background-color: rgba(0, 0, 0, 0.75);
-        z-index: 2000;
+        z-index: 1100;
     }
 
     .modal {
@@ -38,7 +40,7 @@
         max-width: 500px;
         margin: auto;
         padding: 20px;
-        background-color: #ffa3a3;
+        background-color: #ffffff;
         text-align: center;
     }
 </style>

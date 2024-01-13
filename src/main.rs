@@ -12,7 +12,10 @@ use crate::{
         get_global_css, get_image_comment, index, set_album_lock, set_image_comment,
     },
     session::{authorize_album, create_session, Sessions},
-    user::{create_user, login_user, logout_user, set_user_password, status_user},
+    user::{
+        create_user, delete_user, list_users, login_user, logout_user, set_user_password,
+        status_user,
+    },
 };
 use actix_cors::Cors;
 use actix_web::{error, web, App, Error, HttpServer};
@@ -130,7 +133,9 @@ async fn run() -> anyhow::Result<()> {
             .service(get_file_list)
             .service(get_global_css)
             .service(get_bundle_css)
+            .service(list_users)
             .service(create_user)
+            .service(delete_user)
             .service(status_user)
             .service(login_user)
             .service(logout_user)
