@@ -3,7 +3,7 @@ use crate::{
     cache::{AlbumPayload, CacheEntry, CacheMap, CachePayload, FilePayload},
     files::{authorized, load_cache::load_cache_single},
     map_err,
-    session::{find_session, Session},
+    session::{find_session, get_valid_session, Session},
     MyData,
 };
 use actix_files::NamedFile;
@@ -229,16 +229,18 @@ pub(crate) async fn set_album_lock(
     bytes: Bytes,
 ) -> Result<HttpResponse> {
     let sessions = data.sessions.read().map_err(map_err)?;
-    let session = find_session(&req, &sessions);
+    let session = get_valid_session(&req, &sessions)?;
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let root_dir = data.path.lock().map_err(map_err)?;
     let mut cache = data.cache.lock().map_err(map_err)?;
-    authorized_path(&path, &root_dir, session, &cache)?;
+    if !session.is_admin {
+        authorized_path(&path, &root_dir, Some(session), &cache)?;
+    }
     let password = bytes.as_ref();
     let hash = if password.is_empty() {
-        vec![]
+        "".to_string()
     } else {
-        sha256::digest(password).into_bytes()
+        sha256::digest(password)
     };
 
     let abs_path = root_dir.join(&path);
@@ -253,7 +255,7 @@ pub(crate) async fn set_album_lock(
             modified: 0.,
             desc: None,
             payload: CachePayload::Album(AlbumPayload {
-                password_hash: vec![],
+                password_hash: String::new(),
             }),
         }
     });

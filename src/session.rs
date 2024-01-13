@@ -117,7 +117,7 @@ pub(crate) async fn authorize_album(
         return Err(error::ErrorBadRequest("File cannot be locked"));
     };
 
-    if album.password_hash == sha256::digest(password).as_bytes() {
+    if album.password_hash == sha256::digest(password) {
         session.auth_dirs.insert(abs_path);
     } else {
         return Err(error::ErrorNotAcceptable("Incorrect Password"));

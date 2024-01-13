@@ -13,7 +13,7 @@ pub(crate) struct FilePayload {
 
 #[derive(Debug)]
 pub(crate) struct AlbumPayload {
-    pub password_hash: Vec<u8>,
+    pub password_hash: String,
 }
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ impl CacheEntry {
         }
     }
 
-    pub(crate) fn _password_hash(&self) -> Option<&[u8]> {
+    pub(crate) fn _password_hash(&self) -> Option<&str> {
         match self.payload {
             CachePayload::Album(ref album) => Some(&album.password_hash),
             _ => None,
