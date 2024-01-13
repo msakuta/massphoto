@@ -84,6 +84,23 @@ pub(crate) fn find_session_mut<'a>(
         .and_then(|cookie| sessions.get_mut(cookie.value()))
 }
 
+/// A convenience function that maps absent session into an error
+pub(crate) fn get_valid_session<'a>(
+    req: &HttpRequest,
+    sessions: &'a Sessions,
+) -> actix_web::Result<&'a Session> {
+    find_session(&req, sessions)
+        .ok_or_else(|| error::ErrorBadRequest("Session expired. Please reload the browser."))
+}
+
+pub(crate) fn get_valid_session_mut<'a>(
+    req: &HttpRequest,
+    sessions: &'a mut Sessions,
+) -> actix_web::Result<&'a mut Session> {
+    find_session_mut(&req, sessions)
+        .ok_or_else(|| error::ErrorBadRequest("Session expired. Please reload the browser."))
+}
+
 pub(crate) async fn authorize_album(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,

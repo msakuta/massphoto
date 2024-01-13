@@ -8,6 +8,7 @@
 	import PasswordEntry from './PasswordEntry.svelte';
 	import UserLogin from './UserLogin.svelte';
 	import UserAdd from './UserAdd.svelte';
+	import ChangePassword from './ChangePassword.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
 
@@ -143,6 +144,34 @@
 		showingUserAddDialog = false;
 	}
 
+	let showingChangePasswordDialog = false;
+
+	function onStartChangePassword() {
+		showingChangePasswordDialog = true;
+	}
+
+	async function onChangePassword(evt) {
+		if(evt.detail.password !== evt.detail.passwordCheck){
+			errorMessage = "The retyped password does not match. Try again";
+			return;
+		}
+		const res = await fetch(`${baseUrl}/set_password`, {
+			method: "POST",
+			credentials: "include",
+			body: evt.detail.password,
+		});
+		if (!res.ok) {
+			const response = await res.text();
+			errorMessage = `Change password failed: ${response}`;
+			return;
+		}
+		showingUserAddDialog = false;
+	}
+
+	function cancelChangePassword() {
+		showingChangePasswordDialog = false;
+	}
+
 	function onLock() {
 		showingLockDialog = true;
 	}
@@ -247,6 +276,8 @@
 <UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
 {:else if showingUserAddDialog}
 <UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
+{:else if showingChangePasswordDialog}
+<ChangePassword on:submit={onChangePassword} on:cancel={cancelChangePassword}/>
 {:else if showingLockDialog}
 <PasswordEntry on:submit={lockWithPassword} on:cancel={cancelPassword}/>
 {:else if showingUnlockDialog}
@@ -258,6 +289,7 @@
 	<div class="iconContainer">
 		<img class="icon" alt="login" src={userImage} on:click={onStartLogin}>
 		<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
+		<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>
 		<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>
 		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
 		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>

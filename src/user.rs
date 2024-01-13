@@ -7,7 +7,12 @@ use rusqlite::{params, Connection};
 use serde::Deserialize;
 use sha1::{Digest, Sha1};
 
-use crate::{db_utils::table_exists, map_err, session::find_session_mut, MyData};
+use crate::{
+    db_utils::table_exists,
+    map_err,
+    session::{find_session, find_session_mut, get_valid_session, get_valid_session_mut},
+    MyData,
+};
 
 #[derive(Debug, Deserialize)]
 struct CreateUserParams {
@@ -60,11 +65,7 @@ pub(crate) async fn login_user(
     passwd: Bytes,
 ) -> Result<&'static str> {
     let mut sessions = data.sessions.write().unwrap();
-    let Some(session) = find_session_mut(&req, &mut sessions) else {
-        return Err(error::ErrorBadRequest(
-            "Session expired. Please reload the browser.",
-        ));
-    };
+    let session = get_valid_session_mut(&req, &mut sessions)?;
     println!("Attempt logging in: {name:?}");
     let conn = data.conn.lock().unwrap();
     let (id, db_passwd, is_admin) = conn
@@ -88,5 +89,25 @@ pub(crate) async fn login_user(
     }
     session.user_id = Some(id);
     session.is_admin = is_admin;
+    Ok("Ok")
+}
+
+#[actix_web::post("/set_password")]
+pub(crate) async fn set_user_password(
+    data: web::Data<MyData>,
+    req: HttpRequest,
+    passwd: Bytes,
+) -> Result<&'static str> {
+    let sessions = data.sessions.read().unwrap();
+    let session = get_valid_session(&req, &sessions)?;
+    let user_id = session
+        .user_id
+        .ok_or_else(|| error::ErrorBadRequest("Please login first"))?;
+    let conn = data.conn.lock().map_err(map_err)?;
+    conn.execute(
+        "UPDATE user SET password = ?1 WHERE id = ?2",
+        params![Sha1::digest(passwd).as_slice(), user_id],
+    )
+    .map_err(map_err)?;
     Ok("Ok")
 }
