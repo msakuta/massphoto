@@ -92,6 +92,19 @@ pub(crate) async fn login_user(
     Ok("Ok")
 }
 
+#[actix_web::post("/user_logout")]
+pub(crate) async fn logout_user(data: web::Data<MyData>, req: HttpRequest) -> Result<&'static str> {
+    let mut sessions = data.sessions.write().unwrap();
+    let session = get_valid_session_mut(&req, &mut sessions)?;
+    println!("Attempt logging out: {:?}", session.user_id);
+    if session.user_id.is_none() {
+        return Err(error::ErrorBadRequest("Already logged out"));
+    }
+    session.user_id = None;
+    session.is_admin = false;
+    Ok("Ok")
+}
+
 #[actix_web::post("/set_password")]
 pub(crate) async fn set_user_password(
     data: web::Data<MyData>,

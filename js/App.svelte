@@ -2,11 +2,13 @@
 	import keyImage from '../assets/key.png';
 	import userImage from '../assets/user.png';
 	import userAddImage from '../assets/userAdd.png';
+	import userLogoutImage from '../assets/userLogout.png';
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
 	import PasswordEntry from './PasswordEntry.svelte';
 	import UserLogin from './UserLogin.svelte';
+	import UserLogout from './UserLogout.svelte';
 	import UserAdd from './UserAdd.svelte';
 	import ChangePassword from './ChangePassword.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
@@ -108,6 +110,29 @@
 
 	async function onCancelUserLogin() {
 		showingUserLoginDialog = false;
+	}
+
+	let showingUserLogoutDialog = false;
+
+	function onStartLogout() {
+		showingUserLogoutDialog = true;
+	}
+
+	async function onUserLogout() {
+		const res = await fetch(`${baseUrl}/user_logout`, {
+			method: "POST",
+			credentials: "include",
+		});
+		if (!res.ok) {
+			const response = await res.text();
+			errorMessage = `User logout failed: ${response}`;
+			return;
+		}
+		location.reload();
+	}
+
+	function onCancelUserLogout() {
+		showingUserLogoutDialog = false;
 	}
 
 	let showingUserAddDialog = false;
@@ -274,6 +299,8 @@
 <ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
 {:else if showingUserLoginDialog}
 <UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
+{:else if showingUserLogoutDialog}
+<UserLogout on:submit={onUserLogout} on:cancel={onCancelUserLogout}/>
 {:else if showingUserAddDialog}
 <UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
 {:else if showingChangePasswordDialog}
@@ -288,6 +315,7 @@
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
 		<img class="icon" alt="login" src={userImage} on:click={onStartLogin}>
+		<img class="icon" alt="logout" src={userLogoutImage} on:click={onStartLogout}>
 		<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
 		<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>
 		<img class="icon" alt="clearcache" src={`${baseUrl}/clearCache.png`} on:click={onClearCache}>

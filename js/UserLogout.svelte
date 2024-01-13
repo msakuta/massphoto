@@ -3,9 +3,11 @@
 
     const dispatch = createEventDispatcher();
 
-    export let message = "Change password:";
-    let password = "";
-    let passwordCheck = "";
+    export let message = "Ok to logout?";
+
+    function submit() {
+        dispatch('submit');
+    }
 
     function cancel() {
         dispatch('cancel');
@@ -14,14 +16,9 @@
 
 <div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
-        <label>{message}
-            <input type="password" bind:value={password}>
-        </label>
-        <label>Retype password:
-            <input type="password" bind:value={passwordCheck}>
-        </label>
+        {message}
         <div>
-            <button value="Ok" on:click={dispatch('submit', {password, passwordCheck})}>Ok</button>
+            <button value="Ok" on:click={submit}>Ok</button>
             <button value="Cancel" on:click={cancel}>Cancel</button>
         </div>
     </div>
