@@ -1,7 +1,28 @@
 <script>
+	import keyImage from '../assets/key.png';
+	import userImage from '../assets/user.png';
+	import userAddImage from '../assets/userAdd.png';
+	import usersImage from '../assets/users.png';
+	import userLogoutImage from '../assets/userLogout.png';
+	import clearCacheImage from '../assets/clearCache.png';
+	import homeImage from '../assets/home.png';
+	import upImage from '../assets/up.png';
+	import leftImage from '../assets/left.png';
+	import rightImage from '../assets/right.png';
+	import lockImage from '../assets/lock.png';
+	import changeOwnerImage from '../assets/changeOwner.png';
+
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
 	import Thumbnail from './Thumbnail.svelte';
+	import PasswordEntry from './PasswordEntry.svelte';
+	import UserLogin from './UserLogin.svelte';
+	import UserLogout from './UserLogout.svelte';
+	import UserAdd from './UserAdd.svelte';
+	import UserList from './UserList.svelte';
+	import ChangePassword from './ChangePassword.svelte';
+	import ChangeOwner from './ChangeOwner.svelte';
+	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
 
 	const baseUrl = BASE_URL;
@@ -11,14 +32,58 @@
 	let dirList = [];
 	let fileList = [];
 	async function loadPage(path){
-		const res = await fetch(`${baseUrl}/file_list/${path}`);
+		const headers = {  };
+		const res = await fetch(`${baseUrl}/file_list/${path}`, {
+			headers,
+			credentials: "include",
+		});
+		if(!res.ok){
+			// If the album is password locked, attempt unlock
+			if(res.status === 403){
+				showingUnlockDialog = true;
+				unlockAttemptPath = path;
+				return;
+			}
+			errorMessage = await res.text();
+			return;
+		}
 		const json = await res.json();
 		dirList = json.dirs;
 		fileList = json.files;
 		selectedFile = null;
+		rootPath = path;
 	}
 
 	let selectedFile = null;
+
+	let showingLockDialog = false;
+	let showingUnlockDialog = false;
+	let unlockAttemptPath = null;
+
+	let errorMessage = null;
+	let userName = "";
+	let userIsAdmin = false;
+
+	async function createOrRestoreSession() {
+		const res = await fetch(`${baseUrl}/sessions`, {
+			method: "GET",
+			credentials: "include",
+		});
+		if(!res.ok) errorMessage = await res.text();
+	}
+
+	async function getUserStatus() {
+		const res = await fetch(`${baseUrl}/user_status`, {
+			credentials: "include",
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		let result = await res.json();
+		userName = result.logged_in ? result.name : "";
+		userIsAdmin = result.is_admin;
+	}
 
 	function setFocus(evt){
 		selectedFile = evt.detail;
@@ -29,13 +94,11 @@
 	}
 
 	function selectDir(event){
-		rootPath = event.detail;
-		loadPage(rootPath);
+		loadPage(event.detail);
 	}
 
 	function onHome(){
-		rootPath = "";
-		loadPage(rootPath);
+		loadPage("");
 	}
 
 	function onUp(){
@@ -48,6 +111,240 @@
 			rootPath = "";
 			loadPage(rootPath);
 		}
+	}
+
+	let showingUserLoginDialog = false;
+
+	function onStartLogin() {
+		showingUserLoginDialog = true;
+	}
+
+	async function onUserLogin(evt) {
+		const res = await fetch(`${baseUrl}/users/login`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name: evt.detail.name,
+				password: evt.detail.password,
+			}),
+		});
+		if (!res.ok) {
+			const response = await res.text();
+			errorMessage = `User login failed: ${response}`;
+			return;
+		}
+		location.reload();
+	}
+
+	async function onCancelUserLogin() {
+		showingUserLoginDialog = false;
+	}
+
+	let showingUserLogoutDialog = false;
+
+	function onStartLogout() {
+		showingUserLogoutDialog = true;
+	}
+
+	async function onUserLogout() {
+		const res = await fetch(`${baseUrl}/user_logout`, {
+			method: "POST",
+			credentials: "include",
+		});
+		if (!res.ok) {
+			const response = await res.text();
+			errorMessage = `User logout failed: ${response}`;
+			return;
+		}
+		location.reload();
+	}
+
+	function onCancelUserLogout() {
+		showingUserLogoutDialog = false;
+	}
+
+	let showingUserAddDialog = false;
+
+	function onStartUserAdd() {
+		showingUserAddDialog = true;
+	}
+
+	async function onUserAdd(evt) {
+		if(evt.detail.password !== evt.detail.passwordCheck){
+			errorMessage = "The retyped password does not match. Try again";
+			return;
+		}
+		const res = await fetch(`${baseUrl}/users`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				name: evt.detail.name,
+				password: evt.detail.password
+			})
+		});
+		if (!res.ok) {
+			const response = await res.text();
+			errorMessage = `User add failed: ${response}`;
+			return;
+		}
+		showingUserAddDialog = false;
+	}
+
+	function onCancelUserAdd() {
+		showingUserAddDialog = false;
+	}
+
+	let showingChangePasswordDialog = false;
+
+	function onStartChangePassword() {
+		showingChangePasswordDialog = true;
+	}
+
+	async function onChangePassword(evt) {
+		if(evt.detail.password !== evt.detail.passwordCheck){
+			errorMessage = "The retyped password does not match. Try again";
+			return;
+		}
+		const res = await fetch(`${baseUrl}/set_password`, {
+			method: "POST",
+			credentials: "include",
+			body: evt.detail.password,
+		});
+		if (!res.ok) {
+			const response = await res.text();
+			errorMessage = `Change password failed: ${response}`;
+			return;
+		}
+		showingUserAddDialog = false;
+	}
+
+	function cancelChangePassword() {
+		showingChangePasswordDialog = false;
+	}
+
+	function onLock() {
+		showingLockDialog = true;
+	}
+
+	async function lockWithPassword(evt) {
+		const password = evt.detail;
+		const res = await fetch(`${baseUrl}/albums/${rootPath}/lock`, {
+			method: "POST",
+			mode: "cors",
+			headers: {
+				"Content-Type": "text/plain"
+			},
+			credentials: "include",
+			body: password,
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		const text = await res.text();
+		console.log(`lock res: ${text}`);
+		showingLockDialog = false;
+	}
+
+	function cancelPassword() {
+		showingLockDialog = false;
+	}
+
+	async function tryUnlock(evt) {
+		const res = await fetch(`${baseUrl}/albums/${unlockAttemptPath}/auth`, {
+			method: "POST",
+			credentials: "include",
+			body: evt.detail,
+		});
+		if(res.ok){
+			const ok = await res.text();
+			showingUnlockDialog = false;
+			loadPage(unlockAttemptPath);
+		}
+		else{
+			errorMessage = await res.text();
+		}
+	}
+
+	async function updateUserList() {
+		let res = await fetch(`${baseUrl}/users`, {
+			credentials: "include",
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		users = await res.json();
+	}
+
+	function cancelUnlock() {
+		showingUnlockDialog = false;
+	}
+
+	let showingUserList = false;
+	let users = [];
+
+	async function onUserList() {
+		await updateUserList();
+		showingUserList = true;
+	}
+
+	function onUserListClose() {
+		showingUserList = false;
+	}
+
+	async function onUserDelete(evt) {
+		const deletingId = evt.detail;
+		const res = await fetch(`${baseUrl}/users/${deletingId}`, {
+			method: "DELETE",
+			credentials: "include",
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		onUserList();
+	}
+
+	let currentOwner = 1;
+
+	let showingChangeOwnerDialog = false;
+
+	async function onStartOwnerChange() {
+		const ownerFut = (async () => {
+			const res = await fetch(`${baseUrl}/albums/${rootPath}/owner`, {
+				credentials: "include"
+			});
+			if(!res.ok){
+				errorMessage = await res.text();
+				return;
+			}
+			return parseInt(await res.text());
+		})();
+		const usersFut = updateUserList();
+		currentOwner = (await Promise.all([ownerFut, usersFut]))[0];
+		console.log(`currentOwner: ${currentOwner}`);
+		showingChangeOwnerDialog = true;
+	}
+
+	async function onSetOwner(evt) {
+		const res = await fetch(`${baseUrl}/albums/${rootPath}/set_owner`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				user_id: evt.detail,
+			}),
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		showingChangeOwnerDialog = false;
 	}
 
 	function onPrevImage() {
@@ -89,16 +386,72 @@
 
 	$: commentUrl = `${baseUrl}/comments/${selectedFile}`;
 
-	window.addEventListener('load', () => loadPage(rootPath));
+	function onCloseErrorMessage() {
+		errorMessage = null;
+	}
+
+	async function onClearCache() {
+		const res = await fetch(`${baseUrl}/clear_cache`);
+	}
+
+	async function initialize() {
+		// Get the session before fetching the first file list.
+		await createOrRestoreSession();
+		getUserStatus();
+		loadPage(rootPath);
+	}
 </script>
+
+{#if errorMessage !== null}
+<ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
+{:else if showingUserLoginDialog}
+<UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
+{:else if showingUserLogoutDialog}
+<UserLogout on:submit={onUserLogout} on:cancel={onCancelUserLogout}/>
+{:else if showingUserAddDialog}
+<UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
+{:else if showingChangePasswordDialog}
+<ChangePassword on:submit={onChangePassword} on:cancel={cancelChangePassword}/>
+{:else if showingLockDialog}
+<PasswordEntry on:submit={lockWithPassword} on:cancel={cancelPassword}/>
+{:else if showingUnlockDialog}
+<PasswordEntry message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
+{/if}
+
+{#if showingUserList}
+<UserList {users} on:close={onUserListClose} on:delete={onUserDelete}/>
+{:else if showingChangeOwnerDialog}
+<ChangeOwner {users} {currentOwner} on:close={() => showingChangeOwnerDialog = false} on:ok={onSetOwner}/>
+{/if}
 
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
-		<img class="icon" alt="home" id="homeButton" src={`${baseUrl}/home.png`} on:click={onHome}>
-		<img class="icon" alt="up (U)" id="upButton" src={`${baseUrl}/up.png`} on:click={onUp}>
-		<img class="icon" alt="previous (H)" id="leftButton" src={`${baseUrl}/left.png`}>
-		<img class="icon" alt="next (K)" id="rightButton" src={`${baseUrl}/right.png`}>
+		<span class="userName">{userName}</span>
+		<img class="icon" alt="login" src={userImage} on:click={onStartLogin}>
+		{#if userName}
+			<img class="icon" alt="logout" src={userLogoutImage} on:click={onStartLogout}>
+		{/if}
+		{#if userIsAdmin}
+			<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
+			<img class="icon" alt="userList" src={usersImage} on:click={onUserList}>
+		{/if}
+		{#if userName}
+			<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>
+		{/if}
+		{#if userIsAdmin}
+			<img class="icon" alt="clearcache" src={clearCacheImage} on:click={onClearCache}>
+		{/if}
+		<img class="icon" alt="home" id="homeButton" src={homeImage} on:click={onHome}>
+		<img class="icon" alt="up (U)" id="upButton" src={upImage} on:click={onUp}>
+		<img class="icon" alt="previous (H)" id="leftButton" src={leftImage}>
+		<img class="icon" alt="next (K)" id="rightButton" src={rightImage}>
+		{#if userName}
+			<img class="icon" alt="lock" src={lockImage} on:click={onLock}>
+		{/if}
+		{#if userIsAdmin}
+			<img class="icon" alt="owner change" src={changeOwnerImage} on:click={onStartOwnerChange}>
+		{/if}
 	</div>
 </div>
 
@@ -162,6 +515,13 @@
 		position: absolute;
 		top: 0;
 		right: 0;
+		height: 48px;
+		margin-right: 20px;
+		display: flex;
+	}
+
+	.userName {
+		margin: auto;
 	}
 
 	.scrollContents {
@@ -180,4 +540,4 @@
 	}
 </style>
 
-<svelte:window on:keydown={onKeyDown} />
+<svelte:window on:keydown={onKeyDown} on:load={initialize}/>

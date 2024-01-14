@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="64"
+   height="64"
+   viewBox="0 0 16.933333 16.933333"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   sodipodi:docname="clearCache.svg"
+   inkscape:export-filename="clearCache.png"
+   inkscape:export-xdpi="72"
+   inkscape:export-ydpi="72"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="px"
+     showgrid="true"
+     units="px"
+     inkscape:zoom="11.859035"
+     inkscape:cx="19.141524"
+     inkscape:cy="32.043079"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     inkscape:snap-smooth-nodes="true"
+     width="64px">
+    <inkscape:grid
+       type="xygrid"
+       id="grid9"
+       empspacing="4"
+       spacingx="0.52916666"
+       spacingy="0.52916666" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <inkscape:path-effect
+       effect="fillet_chamfer"
+       id="path-effect2131"
+       is_visible="true"
+       lpeversion="1"
+       satellites_param="F,0,0,1,0,1,0,1 @ F,0,0,1,0,1,0,1 @ F,0,0,1,0,1,0,1 @ F,0,0,1,0,1,0,1 @ F,0,0,1,0,1,0,1 @ F,0,0,1,0,1,0,1 @ F,0,0,1,0,1,0,1"
+       unit="px"
+       method="auto"
+       mode="F"
+       radius="1"
+       chamfer_steps="1"
+       flexible="false"
+       use_knot_distance="true"
+       apply_no_radius="true"
+       apply_with_radius="true"
+       only_selected="false"
+       hide_knots="false" />
+    <marker
+       style="overflow:visible"
+       id="Arrow1Mend"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:stockid="Arrow1Mend"
+       inkscape:isstock="true">
+      <path
+         transform="matrix(-0.4,0,0,-0.4,-4,0)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 0,0 5,-5 -12.5,0 5,5 Z"
+         id="path8467" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="marker8736"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:stockid="Arrow1Mstart"
+       inkscape:isstock="true">
+      <path
+         transform="matrix(0.4,0,0,0.4,4,0)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 0,0 5,-5 -12.5,0 5,5 Z"
+         id="path8734" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="Arrow1Mstart"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:stockid="Arrow1Mstart"
+       inkscape:isstock="true">
+      <path
+         transform="matrix(0.4,0,0,0.4,4,0)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 0,0 5,-5 -12.5,0 5,5 Z"
+         id="path8464" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="Arrow1Lstart"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:stockid="Arrow1Lstart"
+       inkscape:isstock="true">
+      <path
+         transform="matrix(0.8,0,0,0.8,10,0)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 0,0 5,-5 -12.5,0 5,5 Z"
+         id="path8458" />
+    </marker>
+  </defs>
+  <g
+     inkscape:label="レイヤー 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="path904"
+       style="font-variation-settings:normal;opacity:1;vector-effect:none;fill:#c1ffc1;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000;stop-opacity:1"
+       d="M 32 8 C 18 8 12 18 12 18 L 8 18 L 8 24 L 14 24 L 14 56 L 50 56 L 50 24 L 56 24 L 56 16 L 52 16 C 52 16 45.999999 8 32 8 z M 31.566406 13.109375 L 34.964844 13.109375 L 34.964844 17.621094 C 36.162757 17.673177 37.562505 17.842449 39.164062 18.128906 C 40.778641 18.415364 42.04818 18.747397 42.972656 19.125 L 42.972656 24.75 L 42.113281 24.75 C 41.188805 24.216148 40.114579 23.773436 38.890625 23.421875 C 37.666671 23.070314 36.358069 22.848958 34.964844 22.757812 L 34.964844 27.71875 L 36.527344 28.03125 C 39.470043 28.604165 41.631515 29.476566 43.011719 30.648438 C 44.404944 31.807288 45.101563 33.428392 45.101562 35.511719 C 45.101562 37.712233 44.177077 39.600265 42.328125 41.175781 C 40.479173 42.751297 38.02473 43.64323 34.964844 43.851562 L 34.964844 50.939453 L 31.566406 50.939453 L 31.566406 43.96875 C 30.108078 43.955729 28.421869 43.779947 26.507812 43.441406 C 24.593756 43.102866 23.096351 42.679686 22.015625 42.171875 L 22.015625 36.46875 L 22.894531 36.46875 C 24.092444 37.11979 25.466151 37.640626 27.015625 38.03125 C 28.57812 38.421874 30.127609 38.675782 31.664062 38.792969 L 31.664062 33.441406 L 29.769531 33.011719 C 28.571618 32.738282 27.464841 32.41927 26.449219 32.054688 C 25.446618 31.690105 24.580727 31.208331 23.851562 30.609375 C 23.122398 30.010419 22.555988 29.274737 22.152344 28.402344 C 21.748699 27.51693 21.546875 26.429683 21.546875 25.140625 C 21.546875 23.200527 22.432297 21.54036 24.203125 20.160156 C 25.973953 18.779952 28.428395 17.946614 31.566406 17.660156 L 31.566406 13.109375 z M 31.878906 22.757812 C 31.019534 22.822916 30.244789 23.044272 29.554688 23.421875 C 28.877606 23.786457 28.539062 24.307294 28.539062 24.984375 C 28.539062 25.596352 28.760418 26.071616 29.203125 26.410156 C 29.645832 26.748697 30.537765 27.041667 31.878906 27.289062 L 31.878906 22.757812 z M 34.886719 33.871094 L 34.886719 38.714844 C 35.746091 38.597657 36.481773 38.350259 37.09375 37.972656 C 37.705727 37.582032 38.011719 37.015623 38.011719 36.273438 C 38.011719 35.518232 37.660154 34.958332 36.957031 34.59375 C 36.266929 34.216147 35.576821 33.97526 34.886719 33.871094 z "
+       transform="scale(0.26458333)" />
+  </g>
+</svg>

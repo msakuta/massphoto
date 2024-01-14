@@ -1,8 +1,13 @@
+mod auth;
 mod images;
 mod load_cache;
 
-use crate::MyData;
-use actix_web::{web, HttpResponse};
+use crate::{
+    cache::CacheMap,
+    session::{find_session, Session},
+    MyData,
+};
+use actix_web::{error, web, HttpRequest, HttpResponse};
 use serde_json::{json, Value};
 use std::{
     ffi::OsStr,
@@ -11,100 +16,76 @@ use std::{
 };
 
 pub(crate) use self::{
+    auth::{authorized, get_owner, set_album_lock, set_owner, CheckAuth},
     images::{get_file, get_file_thumb, get_image_comment, set_image_comment},
     load_cache::load_cache,
 };
 
 const THUMBNAIL_SIZE: u32 = 100;
 
-enum Entry {
-    Dir {
-        path: String,
-        image_first: Option<String>,
-        file_count: usize,
-    },
-    File {
-        path: String,
-        label: String,
-        video: bool,
-    },
-}
-
-fn scan_dir(path: &Path) -> (Vec<Value>, Vec<Value>, bool) {
+fn scan_dir(
+    cache: &CacheMap,
+    path: &Path,
+    session: Option<&Session>,
+) -> std::io::Result<(Vec<Value>, Vec<Value>, bool)> {
     let mut has_any_video = false;
 
-    let (dirs, files) = fs::read_dir(&*path)
-    .unwrap()
-    .filter_map(|res| {
-        res.map(|e| {
-            let path = e.path();
-            if path.is_dir() {
-                Some(Entry::Dir {
-                    path: path.file_name()?.to_str()?.to_owned(),
-                    image_first: image_first(&path).and_then(|image_path| {
-                        image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
-                    }),
-                    file_count: file_count(&path),
-                })
-            } else if let Some(os_str) = path.extension() {
-                let ext = os_str.to_ascii_lowercase();
-                if ext == "jpg" || ext == "png" {
-                    Some(Entry::File {
-                        path: format!("{}", path.file_name()?.to_str()?),
-                        label: path.file_name()?.to_str()?.to_owned(),
-                        video: false,
-                    })
-                } else {
-                    let pathstr = path.to_str()?;
-                    if has_extension_segments(pathstr, ".webm")
-                        || has_extension_segments(pathstr, ".mp4")
-                    {
-                        has_any_video = true;
-                        Some(Entry::File {
-                            path: path.file_name()?.to_str()?.to_owned(),
-                            label: path.file_name()?.to_str()?.to_owned(),
-                            video: true,
-                        })
-                    } else {
-                        None
-                    }
-                }
-            } else {
-                // Ignore files without extensions
-                None
-            }
-        })
-        .ok()
-    })
-    .fold((vec![], vec![]), |(mut dirs, mut files), v| {
-        if let Some(Entry::Dir { path, image_first, file_count }) = v {
+    let mut dirs = vec![];
+    let mut files = vec![];
+    for res in fs::read_dir(&*path)? {
+        let Ok(e) = res else {
+            continue;
+        };
+        let path = e.path();
+        let Some(file_name) = path.file_name().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if path.is_dir() {
+            let locked = cache
+                .get(&path)
+                .map(|entry| !authorized(&path, entry, session, CheckAuth::Read))
+                .unwrap_or(false);
             dirs.push(json!({
-                "path": path,
-                "image_first": image_first,
-                "file_count": file_count
+                "path": file_name,
+                "image_first": image_first(&path).and_then(|image_path| {
+                    image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
+                }),
+                "file_count": file_count(&path),
+                "locked": locked
             }));
-        } else if let Some(Entry::File {
-            path,
-            label,
-            video,
-        }) = v
-        {
+        } else if let Some(os_str) = path.extension() {
+            // Ignore files without extensions
+            let ext = os_str.to_ascii_lowercase();
+            let video;
+            if ext == "jpg" || ext == "png" {
+                video = false;
+            } else {
+                let Some(pathstr) = path.to_str() else {
+                    continue;
+                };
+                if has_extension_segments(pathstr, ".webm")
+                    || has_extension_segments(pathstr, ".mp4")
+                {
+                    video = true;
+                    has_any_video = true;
+                } else {
+                    continue;
+                }
+            }
             files.push(json!({
-                "path": path,
+                "path": file_name,
                 "basename": Path::new(&path).file_name().unwrap_or_else(|| OsStr::new("")).to_string_lossy(),
-                "label": label,
+                "label": file_name,
                 "video": video,
             }));
         }
-        (dirs, files)
-    });
+    }
 
-    (dirs, files, has_any_video)
+    Ok((dirs, files, has_any_video))
 }
 
 pub(crate) async fn index() -> HttpResponse {
     let html = include_str!("../public/index.html");
-
     HttpResponse::Ok().content_type("text/html").body(html)
 }
 
@@ -153,37 +134,59 @@ pub(crate) async fn get_bundle_css() -> HttpResponse {
 }
 
 #[actix_web::get("/file_list/")]
-pub(crate) async fn get_file_list_root(data: web::Data<MyData>) -> HttpResponse {
+pub(crate) async fn get_file_list_root(
+    data: web::Data<MyData>,
+    req: HttpRequest,
+) -> actix_web::Result<HttpResponse> {
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
     let path = data.path.lock().unwrap();
+    let cache = data.cache.lock().unwrap();
 
-    let (dirs, files, _) = scan_dir(&path);
+    let (dirs, files, _) = scan_dir(&cache, &path, session)?;
 
-    HttpResponse::Ok()
+    Ok(HttpResponse::Ok()
         .content_type("application/json")
         .json(&json!({
             "path": "",
             "dirs": dirs,
             "files": files,
-        }))
+        })))
 }
 
 #[actix_web::get("/file_list/{path:.*}")]
 pub(crate) async fn get_file_list(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,
-) -> HttpResponse {
+    req: HttpRequest,
+) -> actix_web::Result<HttpResponse> {
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
     let path = path.into_inner();
     let abs_path = data.path.lock().unwrap().join(&path);
+    let cache = data.cache.lock().unwrap();
 
-    let (dirs, files, _) = scan_dir(&abs_path);
+    if cache
+        .get(&abs_path)
+        .map(|entry| !authorized(&abs_path, entry, session, CheckAuth::Read))
+        .unwrap_or(false)
+    {
+        println!("Album {abs_path:?} is locked");
+        return Err(error::ErrorForbidden(
+            "Forbidden to access password protected album",
+        ));
+    }
+    let (dirs, files, _) = scan_dir(&cache, &abs_path, session)?;
 
-    HttpResponse::Ok()
+    println!("File list for {path:?}");
+
+    Ok(HttpResponse::Ok()
         .content_type("application/json")
         .json(&json!({
             "path": *path,
             "dirs": dirs,
             "files": files,
-        }))
+        })))
 }
 
 /// Standard's `Path` can be used for last segment of file extensions,

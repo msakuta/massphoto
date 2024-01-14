@@ -1,7 +1,21 @@
-use super::THUMBNAIL_SIZE;
-use crate::{map_err, CacheEntry, MyData};
+use super::{
+    auth::{authorized_path, CheckAuth},
+    THUMBNAIL_SIZE,
+};
+use crate::{
+    cache::{CacheEntry, CachePayload, FilePayload},
+    files::load_cache::load_cache_single,
+    map_err,
+    session::find_session,
+    MyData,
+};
 use actix_files::NamedFile;
-use actix_web::{error, http::header::LastModified, web, HttpRequest, HttpResponse, Result};
+use actix_web::{
+    error,
+    http::header::LastModified,
+    web::{self, Bytes},
+    HttpRequest, HttpResponse, Result,
+};
 use image::{io::Reader as ImageReader, ImageOutputFormat};
 
 use std::{
@@ -12,12 +26,13 @@ use std::{
 };
 
 pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data
-        .path
-        .lock()
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?
-        .join(path);
+    let root_dir = data.path.lock().map_err(map_err)?;
+    let abs_path = root_dir.join(&path);
+    let cache = data.cache.lock().unwrap();
+    authorized_path(&path, &root_dir, session, &cache, CheckAuth::Read)?;
     println!("Opening {:?}", abs_path);
     Ok(NamedFile::open(abs_path)?)
 }
@@ -26,14 +41,6 @@ pub(crate) async fn get_file_thumb(
     data: web::Data<MyData>,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data
-        .path
-        .lock()
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?
-        .join(path);
-    println!("Opening {:?}", abs_path);
-
     let result = |out, modified| {
         let mut builder = HttpResponse::Ok();
         builder.content_type("image/jpg");
@@ -43,17 +50,50 @@ pub(crate) async fn get_file_thumb(
         Ok(builder.body(out))
     };
 
-    if let Some(entry) = data.cache.lock().map_err(map_err)?.get(&abs_path) {
-        // Defaults true because some filesystems do not support file modified dates. I don't know such a
-        // filesystem, but Rust documentation says so.
-        if get_file_modified(&abs_path)
-            .map(|date| date <= entry.modified)
-            .unwrap_or(true)
-        {
-            return result(entry.data.clone(), entry.modified);
-        } else {
-            println!("Found thumbnail cache in db, but it is older than the file")
+    let abs_path;
+    {
+        static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+        let sessions = data.sessions.read().map_err(map_err)?;
+        let session = find_session(&req, &sessions);
+        let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+        let root_dir = data.path.lock().map_err(map_err)?;
+        abs_path = root_dir.join(&path);
+        let cache = data.cache.lock().map_err(map_err)?;
+        authorized_path(&path, &root_dir, session, &cache, CheckAuth::Read)?;
+        let start = START.get_or_init(|| std::time::Instant::now());
+        println!(
+            "[{:?}] [{:?}] Opening {:?}",
+            std::thread::current().id(),
+            start.elapsed(),
+            abs_path
+        );
+
+        if let Some(entry) = cache.get(&abs_path) {
+            // Defaults true because some filesystems do not support file modified dates. I don't know such a
+            // filesystem, but Rust documentation says so.
+            if get_file_modified(&abs_path)
+                .map(|date| date <= entry.modified)
+                .unwrap_or(true)
+            {
+                if let CachePayload::File(payload) = &entry.payload {
+                    let data = load_cache_single(&data.conn.lock().unwrap(), &abs_path)
+                        .map_err(map_err)?;
+                    if !data.is_empty() {
+                        return result(data, entry.modified);
+                    }
+                    if !payload.data.is_empty() {
+                        return result(payload.data.clone(), entry.modified);
+                    }
+                } else {
+                    return Err(error::ErrorInternalServerError(
+                        "Album does not have thumbnail",
+                    ));
+                }
+            } else {
+                println!("Found thumbnail cache in db, but it is older than the file")
+            }
         }
+        // Drop all mutex locks here before entering CPU intense processing
     }
 
     let img = ImageReader::open(&abs_path)?
@@ -67,13 +107,14 @@ pub(crate) async fn get_file_thumb(
 
     let modified = get_file_modified(&abs_path).unwrap_or(0.);
 
-    data.cache.lock().map_err(map_err)?.insert(
+    let mut cache = data.cache.lock().map_err(map_err)?;
+    cache.insert(
         abs_path,
         CacheEntry {
             new: true,
             modified,
             desc: None,
-            data: out.clone(),
+            payload: CachePayload::File(FilePayload { data: out.clone() }),
         },
     );
 
@@ -115,21 +156,10 @@ pub(crate) async fn get_image_comment(
 
 pub(crate) async fn set_image_comment(
     data: web::Data<MyData>,
-    mut payload: web::Payload,
+    bytes: Bytes,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    use futures_util::stream::StreamExt;
-    const MAX_SIZE: usize = 1024 * 100;
-    let mut body = web::BytesMut::new();
-    while let Some(chunk) = payload.next().await {
-        let chunk = chunk?;
-        // limit max size of in-memory payload
-        if (body.len() + chunk.len()) > MAX_SIZE {
-            return Err(error::ErrorBadRequest("overflow"));
-        }
-        body.extend_from_slice(&chunk);
-    }
-    let desc = std::str::from_utf8(&body).unwrap();
+    let desc = std::str::from_utf8(&bytes).unwrap();
 
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let abs_path = data.path.lock().map_err(map_err)?.join(&path);
@@ -145,7 +175,7 @@ pub(crate) async fn set_image_comment(
             new: true,
             modified: 0.,
             desc: Some(desc.to_string()),
-            data: vec![],
+            payload: CachePayload::File(FilePayload { data: vec![] }),
         }
     });
     entry.desc = Some(desc.to_string());
