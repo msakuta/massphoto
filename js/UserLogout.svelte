@@ -16,6 +16,7 @@
 
 <div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
+        <h2>Logging Out</h2>
         {message}
         <div>
             <button value="Ok" on:click={submit}>Ok</button>

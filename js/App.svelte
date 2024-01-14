@@ -1,16 +1,9 @@
 <script>
-	import keyImage from '../assets/key.png';
-	import userImage from '../assets/user.png';
-	import userAddImage from '../assets/userAdd.png';
-	import usersImage from '../assets/users.png';
-	import userLogoutImage from '../assets/userLogout.png';
-	import clearCacheImage from '../assets/clearCache.png';
 	import homeImage from '../assets/home.png';
 	import upImage from '../assets/up.png';
 	import leftImage from '../assets/left.png';
 	import rightImage from '../assets/right.png';
-	import lockImage from '../assets/lock.png';
-	import changeOwnerImage from '../assets/changeOwner.png';
+	import hamburgerImage from '../assets/hamburger.png';
 
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
@@ -22,6 +15,7 @@
 	import UserList from './UserList.svelte';
 	import ChangePassword from './ChangePassword.svelte';
 	import ChangeOwner from './ChangeOwner.svelte';
+	import MainMenu from './MainMenu.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
 
@@ -116,6 +110,7 @@
 	let showingUserLoginDialog = false;
 
 	function onStartLogin() {
+		showingMainMenu = false;
 		showingUserLoginDialog = true;
 	}
 
@@ -364,6 +359,8 @@
 		isSelectedVideo = found && found.video;
 	}
 
+	let showingMainMenu = false;
+
 	function onKeyDown(evt) {
 		switch(evt.keyCode) {
 			case 37: evt.preventDefault(); onPrevImage(); break;
@@ -418,9 +415,9 @@
 {:else if showingChangePasswordDialog}
 <ChangePassword on:submit={onChangePassword} on:cancel={cancelChangePassword}/>
 {:else if showingLockDialog}
-<PasswordEntry on:submit={lockWithPassword} on:cancel={cancelPassword}/>
+<PasswordEntry title="Locking Album" on:submit={lockWithPassword} on:cancel={cancelPassword}/>
 {:else if showingUnlockDialog}
-<PasswordEntry message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
+<PasswordEntry title="Unlocking Album" message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
 {/if}
 
 {#if showingUserList}
@@ -429,34 +426,28 @@
 <ChangeOwner {users} {currentOwner} on:close={() => showingChangeOwnerDialog = false} on:ok={onSetOwner}/>
 {/if}
 
+{#if showingMainMenu}
+<MainMenu {userName} {userIsAdmin}
+	on:close={() => showingMainMenu = false}
+	on:login={onStartLogin}
+	on:logout={onStartLogout}
+	on:userAdd={onStartUserAdd}
+	on:userList={onUserList}
+	on:changePassword={onStartChangePassword}
+	on:clearCache={onClearCache}
+	on:lock={onLock}
+	on:ownerChange={onStartOwnerChange} />
+{/if}
+
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
 		<span class="userName">{userName}</span>
-		<img class="icon" alt="login" src={userImage} on:click={onStartLogin}>
-		{#if userName}
-			<img class="icon" alt="logout" src={userLogoutImage} on:click={onStartLogout}>
-		{/if}
-		{#if userIsAdmin}
-			<img class="icon" alt="userAdd" src={userAddImage} on:click={onStartUserAdd}>
-			<img class="icon" alt="userList" src={usersImage} on:click={onUserList}>
-		{/if}
-		{#if userName}
-			<img class="icon" alt="changePassword" src={keyImage} on:click={onStartChangePassword}>
-		{/if}
-		{#if userIsAdmin}
-			<img class="icon" alt="clearcache" src={clearCacheImage} on:click={onClearCache}>
-		{/if}
 		<img class="icon" alt="home" id="homeButton" src={homeImage} on:click={onHome}>
 		<img class="icon" alt="up (U)" id="upButton" src={upImage} on:click={onUp}>
 		<img class="icon" alt="previous (H)" id="leftButton" src={leftImage}>
 		<img class="icon" alt="next (K)" id="rightButton" src={rightImage}>
-		{#if userName}
-			<img class="icon" alt="lock" src={lockImage} on:click={onLock}>
-		{/if}
-		{#if userIsAdmin}
-			<img class="icon" alt="owner change" src={changeOwnerImage} on:click={onStartOwnerChange}>
-		{/if}
+		<img class="icon" alt="menu" src={hamburgerImage} on:click={() => showingMainMenu = true}>
 	</div>
 </div>
 

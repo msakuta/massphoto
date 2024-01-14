@@ -3,7 +3,8 @@
 
     const dispatch = createEventDispatcher();
 
-    export let message = "Enter password:";
+    export let title = "";
+    export let message = "Enter password (empty to remove protection):";
     let password = "";
 
     function cancel() {
@@ -14,6 +15,7 @@
 
 <div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
+        <h2>{title}</h2>
         {message}
         <input type="password" bind:value={password}>
         <div>
