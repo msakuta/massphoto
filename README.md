@@ -47,7 +47,7 @@ much smaller than the original files.
 
 ## Access Control Rules
 
-It has somewhat different acecess control rules from usual filesystems. It is inspired by zenphoto, where anyone can unlock and see the album contents if the password is given.
+It has somewhat different access control rules from usual filesystems. It is inspired by zenphoto, where anyone can unlock and see the album contents if the password is given.
 
 First, user accounts are managed in such a way that:
 

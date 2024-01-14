@@ -2,9 +2,9 @@
 
 use std::{collections::HashMap, path::PathBuf};
 
-use actix_web::{web, HttpResponse};
+use actix_web::{error, web, HttpRequest, HttpResponse};
 
-use crate::{map_err, MyData};
+use crate::{map_err, session::get_valid_session, MyData};
 
 #[derive(Debug)]
 pub(crate) struct FilePayload {
@@ -69,7 +69,17 @@ impl CacheEntry {
 /// Cached data from DB and also filesystem. It is kept in-memory and written back to disk on exit.
 pub(crate) type CacheMap = HashMap<PathBuf, CacheEntry>;
 
-pub(crate) async fn clear_cache(data: web::Data<MyData>) -> actix_web::Result<HttpResponse> {
+pub(crate) async fn clear_cache(
+    data: web::Data<MyData>,
+    req: HttpRequest,
+) -> actix_web::Result<HttpResponse> {
+    let sessions = data.sessions.read().unwrap();
+    let session = get_valid_session(&req, &sessions)?;
+    if !session.is_admin {
+        return Err(error::ErrorForbidden(
+            "Only admin is allowed to trigger clear cache",
+        ));
+    }
     let start = std::time::Instant::now();
     let mut cache = data.cache.lock().map_err(map_err)?;
     for (_key, entry) in cache.iter_mut() {

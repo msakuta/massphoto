@@ -64,7 +64,7 @@ pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
 
 pub(crate) fn write_db(
     data: &MyData,
-    cache: &HashMap<PathBuf, CacheEntry>,
+    cache: &mut HashMap<PathBuf, CacheEntry>,
 ) -> Result<(), rusqlite::Error> {
     let filter = |(_, entry): &(&PathBuf, &CacheEntry)| entry.new;
     println!(
@@ -77,9 +77,9 @@ pub(crate) fn write_db(
 
     let tx = db.transaction()?;
 
-    for (key, value) in cache.iter().filter(filter) {
+    for (key, value) in cache.iter_mut().filter(|(_, entry)| entry.new) {
         let path_str = key.as_os_str();
-        match &value.payload {
+        match &mut value.payload {
             CachePayload::File(payload) => {
                 let byte_contents: &[u8] = &payload.data;
                 if tx
@@ -100,11 +100,13 @@ pub(crate) fn write_db(
                         rusqlite::params![path_str.to_str(), value.modified, byte_contents],
                     )?;
                 }
+                payload.data = vec![];
             }
             CachePayload::Album(_value) => {
                 todo!()
             }
         }
+        value.new = false;
     }
     tx.commit()?;
     Ok(())

@@ -131,10 +131,10 @@ async fn run() -> anyhow::Result<()> {
     .run()
     .await;
 
-    let cache = data_copy.cache.lock().unwrap();
+    let mut cache = data_copy.cache.lock().unwrap();
 
     let time_save_db = Instant::now();
-    write_db(&data_copy, &cache).expect("Error in saving cache");
+    write_db(&data_copy, &mut cache).expect("Error in saving cache");
     println!(
         "time save db: {} s",
         time_save_db.elapsed().as_micros() as f64 / 1e6

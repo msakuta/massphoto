@@ -391,7 +391,12 @@
 	}
 
 	async function onClearCache() {
-		const res = await fetch(`${baseUrl}/clear_cache`);
+		const res = await fetch(`${baseUrl}/clear_cache`, {
+			credentials: "include",
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+		}
 	}
 
 	async function initialize() {
