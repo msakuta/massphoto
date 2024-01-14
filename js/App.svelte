@@ -310,10 +310,24 @@
 		onUserList();
 	}
 
+	let currentOwner = 1;
+
 	let showingChangeOwnerDialog = false;
 
 	async function onStartOwnerChange() {
-		await updateUserList();
+		const ownerFut = (async () => {
+			const res = await fetch(`${baseUrl}/albums/${rootPath}/owner`, {
+				credentials: "include"
+			});
+			if(!res.ok){
+				errorMessage = await res.text();
+				return;
+			}
+			return parseInt(await res.text());
+		})();
+		const usersFut = updateUserList();
+		currentOwner = (await Promise.all([ownerFut, usersFut]))[0];
+		console.log(`currentOwner: ${currentOwner}`);
 		showingChangeOwnerDialog = true;
 	}
 
@@ -407,7 +421,7 @@
 {#if showingUserList}
 <UserList {users} on:close={onUserListClose} on:delete={onUserDelete}/>
 {:else if showingChangeOwnerDialog}
-<ChangeOwner {users} on:close={() => showingChangeOwnerDialog = false} on:ok={onSetOwner}/>
+<ChangeOwner {users} {currentOwner} on:close={() => showingChangeOwnerDialog = false} on:ok={onSetOwner}/>
 {/if}
 
 <div class="header">

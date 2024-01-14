@@ -305,6 +305,27 @@ pub(crate) async fn set_album_lock(
     Ok(HttpResponse::Ok().content_type("text/plain").body("ok"))
 }
 
+#[actix_web::get("/albums/{path:.*}/owner")]
+pub(crate) async fn get_owner(
+    data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
+    req: HttpRequest,
+) -> Result<String> {
+    let sessions = data.sessions.read().unwrap();
+    let session = get_valid_session(&req, &sessions)?;
+    let root_dir = data.path.lock().map_err(map_err)?;
+    let cache = data.cache.lock().map_err(map_err)?;
+    let abs_path = root_dir.join(path.as_ref());
+    if !session.is_admin {
+        authorized_path(&path, &root_dir, Some(session), &cache, CheckAuth::Read)?;
+    }
+    let owner = cache
+        .get(&abs_path)
+        .and_then(|entry| entry.owner())
+        .unwrap_or(1);
+    Ok(owner.to_string())
+}
+
 #[derive(Deserialize)]
 struct ChangeOwnerParams {
     user_id: usize,
@@ -334,6 +355,9 @@ pub(crate) async fn set_owner(
         inserted = true;
         CacheEntry::album_with_owner(user_id)
     });
+    if let CachePayload::Album(ref mut payload) = entry.payload {
+        payload.owner = user_id;
+    }
 
     let conn = data.conn.lock().unwrap();
 
@@ -351,7 +375,7 @@ pub(crate) async fn set_owner(
     } else {
         conn.execute(
             "UPDATE album SET owner = ?1 WHERE path = ?2",
-            rusqlite::params![user_id, dbg!(abs_path.to_str())],
+            rusqlite::params![user_id, abs_path.to_str()],
         )
         .map_err(map_err)?
     };

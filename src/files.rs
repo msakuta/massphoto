@@ -16,7 +16,8 @@ use std::{
 
 pub(crate) use self::{
     images::{
-        get_file, get_file_thumb, get_image_comment, set_album_lock, set_image_comment, set_owner,
+        get_file, get_file_thumb, get_image_comment, get_owner, set_album_lock, set_image_comment,
+        set_owner,
     },
     load_cache::load_cache,
 };

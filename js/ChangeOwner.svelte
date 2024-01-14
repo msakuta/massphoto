@@ -4,12 +4,24 @@
     const dispatch = createEventDispatcher();
 
     export let users = [];
+    export let currentOwner = null;
+
+    $: userList = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        password: user.password,
+        class_: rowClass(user),
+    }));
 
     function close() { dispatch('close') }
 
     function onSetOwner(user) {
         if(user === null) return;
         dispatch('ok', user.id);
+    }
+
+    function rowClass(user) {
+        return currentOwner === user.id ? "currentOwner" : "";
     }
 </script>
 
@@ -18,8 +30,8 @@
         <h2>Choose a new owner of this album</h2>
         <table>
             <tr><th>Id</th><th>Name</th><th>Password</th><th>Set owner</th></tr>
-            {#each users as user (user.id)}
-            <tr>
+            {#each userList as user (user.id)}
+            <tr class={user.class_}>
                 <td>{user.id}</td>
                 <td>{user.name}</td>
                 <td>{user.password}</td>
@@ -70,5 +82,9 @@
     td, th {
         border: 1px solid #7f7f7f;
         padding: 4px;
+    }
+
+    .currentOwner {
+        font-weight: bold;
     }
 </style>
