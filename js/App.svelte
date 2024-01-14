@@ -15,6 +15,7 @@
 	import UserList from './UserList.svelte';
 	import ChangePassword from './ChangePassword.svelte';
 	import ChangeOwner from './ChangeOwner.svelte';
+	import TitleBarButton from './TitleBarButton.svelte';
 	import MainMenu from './MainMenu.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
@@ -448,11 +449,11 @@
 	<div class="path" id="path">{rootPath}</div>
 	<div class="iconContainer">
 		<span class="userName">{userName}</span>
-		<img class="icon" alt="home" id="homeButton" src={homeImage} on:click={onHome}>
-		<img class="icon" alt="up (U)" id="upButton" src={upImage} on:click={onUp}>
-		<img class="icon" alt="previous (H)" id="leftButton" src={leftImage}>
-		<img class="icon" alt="next (K)" id="rightButton" src={rightImage}>
-		<img class="icon" alt="menu" src={hamburgerImage} on:click={() => showingMainMenu = true}>
+		<TitleBarButton alt="home" src={homeImage} on:click={onHome} />
+		<TitleBarButton alt="up (U)" src={upImage} on:click={onUp} />
+		<TitleBarButton alt="previous (H)" src={leftImage} />
+		<TitleBarButton alt="next (K)" src={rightImage} />
+		<TitleBarButton alt="menu" src={hamburgerImage} on:click={() => showingMainMenu = true} />
 	</div>
 </div>
 
