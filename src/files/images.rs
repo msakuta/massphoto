@@ -1,9 +1,12 @@
-use super::{CheckAuth, THUMBNAIL_SIZE};
+use super::{
+    auth::{authorized_path, CheckAuth},
+    THUMBNAIL_SIZE,
+};
 use crate::{
-    cache::{AlbumPayload, CacheEntry, CacheMap, CachePayload, FilePayload},
-    files::{authorized, load_cache::load_cache_single},
+    cache::{CacheEntry, CachePayload, FilePayload},
+    files::load_cache::load_cache_single,
     map_err,
-    session::{find_session, get_valid_session, Session},
+    session::find_session,
     MyData,
 };
 use actix_files::NamedFile;
@@ -14,7 +17,6 @@ use actix_web::{
     HttpRequest, HttpResponse, Result,
 };
 use image::{io::Reader as ImageReader, ImageOutputFormat};
-use serde::Deserialize;
 
 use std::{
     fs,
@@ -119,37 +121,6 @@ pub(crate) async fn get_file_thumb(
     result(out, modified)
 }
 
-/// Check all ancestors of an album path.
-fn authorized_path(
-    path: &Path,
-    root_dir: &Path,
-    session: Option<&Session>,
-    cache: &CacheMap,
-    check_auth: CheckAuth,
-) -> actix_web::Result<()> {
-    for seg in path.ancestors() {
-        let ancestor_path = root_dir.join(seg);
-        let Some(entry) = cache.get(&ancestor_path) else {
-            // If the album is absent in the ancestry list, it is considered owned by the admin.
-            if session.map(|s| !s.is_admin).unwrap_or(false)
-                && matches!(check_auth, CheckAuth::Ownership)
-            {
-                return Err(error::ErrorForbidden(
-                    "Owner is different from the current session user. Ask the administrator to give you the ownership of this album.",
-                ));
-            }
-            continue;
-        };
-        if authorized(&ancestor_path, &entry, session, check_auth) {
-            continue;
-        }
-        return Err(error::ErrorForbidden(
-            "Forbidden to access password protected file",
-        ));
-    }
-    Ok(())
-}
-
 /// Return modified date in days since Unix epoch
 pub(crate) fn get_file_modified(path: &Path) -> anyhow::Result<f64> {
     let meta = fs::metadata(path)?;
@@ -232,155 +203,4 @@ pub(crate) async fn set_image_comment(
     println!("inserted: {inserted}, updated: {updated}");
 
     Ok(HttpResponse::Ok().content_type("text/plain").body("ok"))
-}
-
-pub(crate) async fn set_album_lock(
-    data: web::Data<MyData>,
-    req: HttpRequest,
-    bytes: Bytes,
-) -> Result<HttpResponse> {
-    let sessions = data.sessions.read().map_err(map_err)?;
-    let session = get_valid_session(&req, &sessions)?;
-    let user_id = session
-        .user_id
-        .ok_or_else(|| error::ErrorBadRequest("You need to login to lock an album"))?;
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let root_dir = data.path.lock().map_err(map_err)?;
-    let mut cache = data.cache.lock().map_err(map_err)?;
-    if !session.is_admin {
-        authorized_path(
-            &path,
-            &root_dir,
-            Some(session),
-            &cache,
-            CheckAuth::Ownership,
-        )?;
-    }
-    let password = bytes.as_ref();
-    let hash = if password.is_empty() {
-        "".to_string()
-    } else {
-        sha256::digest(password)
-    };
-
-    let abs_path = root_dir.join(&path);
-
-    println!("Password hash set on {path:?} ({abs_path:?}): {hash:?}");
-
-    let mut inserted = false;
-    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
-        inserted = true;
-        CacheEntry::album_with_owner(user_id)
-    });
-
-    let db = data.conn.lock().unwrap();
-
-    let CachePayload::Album(ref mut payload) = entry.payload else {
-        return Err(error::ErrorInternalServerError(
-            "Logic error: inserted was not an album",
-        ));
-    };
-    payload.password_hash = hash;
-    let updated = if inserted {
-        db.execute(
-            "INSERT INTO album (path, desc, password, owner) VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![
-                abs_path.to_str(),
-                entry.desc,
-                payload.password_hash,
-                user_id
-            ],
-        )
-        .map_err(map_err)?
-    } else {
-        db.execute(
-            "UPDATE album SET password = ?2 WHERE path = ?1",
-            rusqlite::params![abs_path.to_str(), payload.password_hash],
-        )
-        .map_err(map_err)?
-    };
-
-    println!("set_album_lock inserted: {inserted}, updated: {updated}");
-
-    Ok(HttpResponse::Ok().content_type("text/plain").body("ok"))
-}
-
-#[actix_web::get("/albums/{path:.*}/owner")]
-pub(crate) async fn get_owner(
-    data: web::Data<MyData>,
-    path: web::Path<PathBuf>,
-    req: HttpRequest,
-) -> Result<String> {
-    let sessions = data.sessions.read().unwrap();
-    let session = get_valid_session(&req, &sessions)?;
-    let root_dir = data.path.lock().map_err(map_err)?;
-    let cache = data.cache.lock().map_err(map_err)?;
-    let abs_path = root_dir.join(path.as_ref());
-    if !session.is_admin {
-        authorized_path(&path, &root_dir, Some(session), &cache, CheckAuth::Read)?;
-    }
-    let owner = cache
-        .get(&abs_path)
-        .and_then(|entry| entry.owner())
-        .unwrap_or(1);
-    Ok(owner.to_string())
-}
-
-#[derive(Deserialize)]
-struct ChangeOwnerParams {
-    user_id: usize,
-}
-
-#[actix_web::post("/albums/{path:.*}/set_owner")]
-pub(crate) async fn set_owner(
-    data: web::Data<MyData>,
-    path: web::Path<PathBuf>,
-    params: web::Json<ChangeOwnerParams>,
-    req: HttpRequest,
-) -> Result<&'static str> {
-    let sessions = data.sessions.read().unwrap();
-    let session = get_valid_session(&req, &sessions)?;
-    if !session.is_admin {
-        return Err(error::ErrorForbidden(
-            "Only the admin is allowed to change owner",
-        ));
-    }
-    let user_id = params.user_id;
-    let root_dir = data.path.lock().map_err(map_err)?;
-    let mut cache = data.cache.lock().map_err(map_err)?;
-    let abs_path = root_dir.join(path.as_ref());
-
-    let mut inserted = false;
-    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
-        inserted = true;
-        CacheEntry::album_with_owner(user_id)
-    });
-    if let CachePayload::Album(ref mut payload) = entry.payload {
-        payload.owner = user_id;
-    }
-
-    let conn = data.conn.lock().unwrap();
-
-    let updated = if inserted {
-        conn.execute(
-            "INSERT INTO album (path, desc, password, owner) VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![
-                abs_path.to_str(),
-                entry.desc,
-                entry.password_hash(),
-                user_id
-            ],
-        )
-        .map_err(map_err)?
-    } else {
-        conn.execute(
-            "UPDATE album SET owner = ?1 WHERE path = ?2",
-            rusqlite::params![user_id, abs_path.to_str()],
-        )
-        .map_err(map_err)?
-    };
-
-    println!("set_owner inserted: {inserted}, updated: {updated}");
-
-    Ok("Ok")
 }

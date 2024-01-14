@@ -1,8 +1,9 @@
+mod auth;
 mod images;
 mod load_cache;
 
 use crate::{
-    cache::{CacheEntry, CacheMap},
+    cache::CacheMap,
     session::{find_session, Session},
     MyData,
 };
@@ -15,10 +16,8 @@ use std::{
 };
 
 pub(crate) use self::{
-    images::{
-        get_file, get_file_thumb, get_image_comment, get_owner, set_album_lock, set_image_comment,
-        set_owner,
-    },
+    auth::{authorized, get_owner, set_album_lock, set_owner, CheckAuth},
+    images::{get_file, get_file_thumb, get_image_comment, set_image_comment},
     load_cache::load_cache,
 };
 
@@ -83,43 +82,6 @@ fn scan_dir(
     }
 
     Ok((dirs, files, has_any_video))
-}
-
-/// The modes to check authority. Explicitly defined to avoid bool-ish API.
-#[derive(Clone, Copy, Debug)]
-pub(crate) enum CheckAuth {
-    /// Check for the ownership
-    Ownership,
-    /// Check for read access
-    Read,
-}
-
-/// Returns true when the path is accessible
-pub(crate) fn authorized(
-    path: &Path,
-    cache_entry: &CacheEntry,
-    session: Option<&Session>,
-    check_auth: CheckAuth,
-) -> bool {
-    if !cache_entry.is_locked() {
-        return true;
-    }
-    let Some(session) = session else {
-        return false;
-    };
-    if session.is_admin {
-        return true;
-    }
-    if cache_entry
-        .owner()
-        .zip(session.user_id)
-        .map(|(owner, user)| owner == user)
-        .unwrap_or(false)
-    {
-        return true;
-    }
-    // When we want to know about only ownership, do not care about temporary authentication.
-    !matches!(check_auth, CheckAuth::Ownership) && session.auth_dirs.contains(path)
 }
 
 pub(crate) async fn index() -> HttpResponse {
