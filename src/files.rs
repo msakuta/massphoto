@@ -15,7 +15,9 @@ use std::{
 };
 
 pub(crate) use self::{
-    images::{get_file, get_file_thumb, get_image_comment, set_album_lock, set_image_comment},
+    images::{
+        get_file, get_file_thumb, get_image_comment, set_album_lock, set_image_comment, set_owner,
+    },
     load_cache::load_cache,
 };
 
@@ -41,7 +43,7 @@ fn scan_dir(
         if path.is_dir() {
             let locked = cache
                 .get(&path)
-                .map(|entry| !authorized(&path, entry, session))
+                .map(|entry| !authorized(&path, entry, session, CheckAuth::Read))
                 .unwrap_or(false);
             dirs.push(json!({
                 "path": file_name,
@@ -82,8 +84,22 @@ fn scan_dir(
     Ok((dirs, files, has_any_video))
 }
 
+/// The modes to check authority. Explicitly defined to avoid bool-ish API.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum CheckAuth {
+    /// Check for the ownership
+    Ownership,
+    /// Check for read access
+    Read,
+}
+
 /// Returns true when the path is accessible
-pub(crate) fn authorized(path: &Path, cache_entry: &CacheEntry, session: Option<&Session>) -> bool {
+pub(crate) fn authorized(
+    path: &Path,
+    cache_entry: &CacheEntry,
+    session: Option<&Session>,
+    check_auth: CheckAuth,
+) -> bool {
     if !cache_entry.is_locked() {
         return true;
     }
@@ -93,7 +109,16 @@ pub(crate) fn authorized(path: &Path, cache_entry: &CacheEntry, session: Option<
     if session.is_admin {
         return true;
     }
-    session.auth_dirs.contains(path)
+    if cache_entry
+        .owner()
+        .zip(session.user_id)
+        .map(|(owner, user)| owner == user)
+        .unwrap_or(false)
+    {
+        return true;
+    }
+    // When we want to know about only ownership, do not care about temporary authentication.
+    !matches!(check_auth, CheckAuth::Ownership) && session.auth_dirs.contains(path)
 }
 
 pub(crate) async fn index() -> HttpResponse {
@@ -180,7 +205,7 @@ pub(crate) async fn get_file_list(
 
     if cache
         .get(&abs_path)
-        .map(|entry| !authorized(&abs_path, entry, session))
+        .map(|entry| !authorized(&abs_path, entry, session, CheckAuth::Read))
         .unwrap_or(false)
     {
         println!("Album {abs_path:?} is locked");

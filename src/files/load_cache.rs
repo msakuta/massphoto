@@ -60,15 +60,18 @@ pub(crate) fn load_cache(
         modified: f64,
         desc: Option<String>,
         password: String,
+        owner: usize,
     }
 
-    let mut stmt = conn.prepare("SELECT path, desc, password FROM album WHERE path LIKE ?1")?;
+    let mut stmt =
+        conn.prepare("SELECT path, desc, password, owner FROM album WHERE path LIKE ?1")?;
     let album_iter = stmt.query_map([format!("{}%", abs_path)], |row| {
         Ok(Album {
             path: row.get(0)?,
             modified: 0.,
             desc: row.get(1).ok(),
             password: row.get(2)?,
+            owner: row.get(3)?,
         })
     })?;
 
@@ -82,6 +85,7 @@ pub(crate) fn load_cache(
                 desc: album.desc,
                 payload: CachePayload::Album(AlbumPayload {
                     password_hash: album.password,
+                    owner: album.owner,
                 }),
             },
         );

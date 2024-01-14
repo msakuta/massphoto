@@ -10,6 +10,7 @@
 	import leftImage from '../assets/left.png';
 	import rightImage from '../assets/right.png';
 	import lockImage from '../assets/lock.png';
+	import changeOwnerImage from '../assets/changeOwner.png';
 
 	import ImageView from './ImageView.svelte';
 	import VideoView from './VideoView.svelte';
@@ -20,6 +21,7 @@
 	import UserAdd from './UserAdd.svelte';
 	import UserList from './UserList.svelte';
 	import ChangePassword from './ChangePassword.svelte';
+	import ChangeOwner from './ChangeOwner.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
 	import { joinPath } from './joinPath';
 
@@ -268,14 +270,7 @@
 		}
 	}
 
-	function cancelUnlock() {
-		showingUnlockDialog = false;
-	}
-
-	let showingUserList = false;
-	let users = [];
-
-	async function onUserList() {
+	async function updateUserList() {
 		let res = await fetch(`${baseUrl}/users`, {
 			credentials: "include",
 		});
@@ -284,6 +279,17 @@
 			return;
 		}
 		users = await res.json();
+	}
+
+	function cancelUnlock() {
+		showingUnlockDialog = false;
+	}
+
+	let showingUserList = false;
+	let users = [];
+
+	async function onUserList() {
+		await updateUserList();
 		showingUserList = true;
 	}
 
@@ -302,6 +308,29 @@
 			return;
 		}
 		onUserList();
+	}
+
+	let showingChangeOwnerDialog = false;
+
+	async function onStartOwnerChange() {
+		await updateUserList();
+		showingChangeOwnerDialog = true;
+	}
+
+	async function onSetOwner(evt) {
+		const res = await fetch(`${baseUrl}/albums/${rootPath}/set_owner`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				user_id: evt.detail,
+			}),
+		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
+		showingChangeOwnerDialog = false;
 	}
 
 	function onPrevImage() {
@@ -377,6 +406,8 @@
 
 {#if showingUserList}
 <UserList {users} on:close={onUserListClose} on:delete={onUserDelete}/>
+{:else if showingChangeOwnerDialog}
+<ChangeOwner {users} on:close={() => showingChangeOwnerDialog = false} on:ok={onSetOwner}/>
 {/if}
 
 <div class="header">
@@ -404,6 +435,7 @@
 		{#if userName}
 			<img class="icon" alt="lock" src={lockImage} on:click={onLock}>
 		{/if}
+		<img class="icon" alt="owner change" src={changeOwnerImage} on:click={onStartOwnerChange}>
 	</div>
 </div>
 

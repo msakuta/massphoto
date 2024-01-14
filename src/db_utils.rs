@@ -36,7 +36,8 @@ pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
             "CREATE TABLE album (
                 path TEXT PRIMARY KEY,
                 password TEXT,
-                desc TEXT
+                desc TEXT,
+                owner INTEGER NOT NULL
             )",
             [],
         )

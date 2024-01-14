@@ -14,6 +14,7 @@ pub(crate) struct FilePayload {
 #[derive(Debug)]
 pub(crate) struct AlbumPayload {
     pub password_hash: String,
+    pub owner: usize,
 }
 
 #[derive(Debug)]
@@ -31,6 +32,18 @@ pub(crate) struct CacheEntry {
 }
 
 impl CacheEntry {
+    pub(crate) fn album_with_owner(owner: usize) -> Self {
+        Self {
+            new: true,
+            modified: 0.,
+            desc: None,
+            payload: CachePayload::Album(AlbumPayload {
+                password_hash: String::new(),
+                owner,
+            }),
+        }
+    }
+
     pub(crate) fn is_locked(&self) -> bool {
         match self.payload {
             CachePayload::Album(ref album) => !album.password_hash.is_empty(),
@@ -38,7 +51,14 @@ impl CacheEntry {
         }
     }
 
-    pub(crate) fn _password_hash(&self) -> Option<&str> {
+    pub(crate) fn owner(&self) -> Option<usize> {
+        match self.payload {
+            CachePayload::Album(ref album) => Some(album.owner),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn password_hash(&self) -> Option<&str> {
         match self.payload {
             CachePayload::Album(ref album) => Some(&album.password_hash),
             _ => None,
