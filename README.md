@@ -45,6 +45,26 @@ much smaller than the original files.
 * Secure system. Do not keep sensitive data in this server, unless you limit access only from internal network.
 
 
+## Access Control Rules
+
+It has somewhat different acecess control rules from usual filesystems. It is inspired by zenphoto, where anyone can unlock and see the album contents if the password is given.
+
+First, user accounts are managed in such a way that:
+
+* Each account has a user name, a password and is_admin flag.
+* When the applciation starts for the first time, it will create an admin account with the default name 'admin'.
+* Only the admin can create new accounts or delete them.
+* User can login to an account by entering a password. The login state is kept as long as the session lives.
+* A user can change his/her own password.
+
+And these are the rules of albums:
+
+* Each album has an owner user account and an optional password.
+* If an album has a password, it cannot be seen by users except the owner or the admins.
+* The owner or the admin can set a password to an album.
+* Users can see the contents of an album if they give a correct password, even if they do not login.
+
+
 ## TODOs
 
 * [ ] Access control per directory
