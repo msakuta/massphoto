@@ -158,21 +158,26 @@ pub(crate) async fn status_user(
     }))
 }
 
-#[actix_web::post("/users/{name}/login")]
+#[derive(Debug, Deserialize)]
+struct LoginUserParams {
+    name: String,
+    password: String,
+}
+
+#[actix_web::post("/users/login")]
 pub(crate) async fn login_user(
     data: web::Data<MyData>,
     req: HttpRequest,
-    name: web::Path<String>,
-    passwd: Bytes,
+    params: web::Json<LoginUserParams>,
 ) -> Result<&'static str> {
     let mut sessions = data.sessions.write().unwrap();
     let session = get_valid_session_mut(&req, &mut sessions)?;
-    println!("Attempt logging in: {name:?}");
+    println!("Attempt logging in: {name:?}", name = params.name);
     let conn = data.conn.lock().unwrap();
     let (id, db_passwd, is_admin) = conn
         .query_row_and_then(
             "SELECT id, password, is_admin FROM user WHERE name = ?1",
-            [name.into_inner()],
+            [&params.name],
             |q| -> rusqlite::Result<(usize, Option<String>, bool)> {
                 Ok((q.get(0)?, q.get(1)?, q.get(2)?))
             },
@@ -182,7 +187,7 @@ pub(crate) async fn login_user(
             e => map_err(e),
         })?;
     if db_passwd
-        .map(|db_passwd| db_passwd != sha256::digest(passwd.as_ref()))
+        .map(|db_passwd| db_passwd != sha256::digest(&params.password))
         .unwrap_or(false)
     {
         // TODO: is it safe to respond that the user name exists?

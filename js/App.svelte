@@ -118,11 +118,14 @@
 	}
 
 	async function onUserLogin(evt) {
-		const name = evt.detail.name;
-		const res = await fetch(`${baseUrl}/users/${name}/login`, {
+		const res = await fetch(`${baseUrl}/users/login`, {
 			method: "POST",
 			credentials: "include",
-			body: evt.detail.password,
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name: evt.detail.name,
+				password: evt.detail.password,
+			}),
 		});
 		if (!res.ok) {
 			const response = await res.text();
