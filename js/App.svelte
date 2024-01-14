@@ -449,7 +449,9 @@
 		{#if userName}
 			<img class="icon" alt="lock" src={lockImage} on:click={onLock}>
 		{/if}
-		<img class="icon" alt="owner change" src={changeOwnerImage} on:click={onStartOwnerChange}>
+		{#if userIsAdmin}
+			<img class="icon" alt="owner change" src={changeOwnerImage} on:click={onStartOwnerChange}>
+		{/if}
 	</div>
 </div>
 
