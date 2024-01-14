@@ -22,7 +22,7 @@
             <input type="password" bind:value={passwordCheck}>
         </label>
         <div>
-            <button value="Ok" on:click={dispatch('submit', {password, passwordCheck})}>Ok</button>
+            <button value="Ok" on:click={() => dispatch('submit', {password, passwordCheck})}>Ok</button>
             <button value="Cancel" on:click={cancel}>Cancel</button>
         </div>
     </div>

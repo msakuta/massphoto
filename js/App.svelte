@@ -215,10 +215,6 @@
 			errorMessage = `Change password failed: ${response}`;
 			return;
 		}
-		showingUserAddDialog = false;
-	}
-
-	function cancelChangePassword() {
 		showingChangePasswordDialog = false;
 	}
 
@@ -417,7 +413,7 @@
 {:else if showingUserAddDialog}
 <UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
 {:else if showingChangePasswordDialog}
-<ChangePassword on:submit={onChangePassword} on:cancel={cancelChangePassword}/>
+<ChangePassword on:submit={onChangePassword} on:cancel={() => showingChangePasswordDialog = false}/>
 {:else if showingLockDialog}
 <PasswordEntry title="Locking Album" on:submit={lockWithPassword} on:cancel={cancelPassword}/>
 {:else if showingUnlockDialog}

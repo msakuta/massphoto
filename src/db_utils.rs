@@ -102,7 +102,7 @@ pub(crate) fn write_db(
                 }
             }
             CachePayload::Album(_value) => {
-                todo!()
+                // TODO: currently, albums don't have thumbnail caches
             }
         }
         value.new = false;
