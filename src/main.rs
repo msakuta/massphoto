@@ -6,7 +6,7 @@ mod user;
 
 use crate::{
     cache::{clear_cache, CacheMap},
-    db_utils::{init_db, write_db},
+    db_utils::{init_db, periodic_cleanup, write_db},
     files::{
         code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
         get_global_css, get_image_comment, get_owner, index, set_album_lock, set_image_comment,
@@ -65,6 +65,13 @@ struct Args {
         help = "The allowed Access-Control-Allow-Origin value. Set \"*\" to allow any origin."
     )]
     cors_origin: String,
+    #[clap(
+        short = 'P',
+        long,
+        default_value = "120",
+        help = "Interval to auto-cleanup cache memory, in seconds."
+    )]
+    cleanup_period: u64,
 }
 
 fn map_err(err: impl ToString) -> Error {
@@ -84,7 +91,7 @@ async fn run() -> anyhow::Result<()> {
     let data = init_db(Path::new(&args.path))?;
 
     let data_copy = data.clone();
-    let result = HttpServer::new(move || {
+    let server_fut = HttpServer::new(move || {
         #[cfg(not(debug_assertions))]
         let cors = {
             let mut cors = Cors::default();
@@ -128,8 +135,11 @@ async fn run() -> anyhow::Result<()> {
             .route("/clear_cache", web::get().to(clear_cache))
     })
     .bind((args.host, args.port))?
-    .run()
-    .await;
+    .run();
+
+    actix_rt::spawn(periodic_cleanup(data_copy.clone(), args.cleanup_period));
+
+    let result = server_fut.await;
 
     let mut cache = data_copy.cache.lock().unwrap();
 
@@ -141,4 +151,10 @@ async fn run() -> anyhow::Result<()> {
     );
 
     result.map_err(anyhow::Error::new)
+}
+
+fn measure_time<T>(f: impl FnOnce() -> T) -> (T, f64) {
+    let start = std::time::Instant::now();
+    let ret = f();
+    (ret, start.elapsed().as_secs_f64())
 }

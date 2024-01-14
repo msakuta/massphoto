@@ -11,7 +11,7 @@ use rusqlite::Connection;
 use crate::{
     cache::{CacheEntry, CachePayload},
     files::load_cache,
-    MyData,
+    measure_time, MyData,
 };
 
 pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
@@ -81,7 +81,7 @@ pub(crate) fn write_db(
         let path_str = key.as_os_str();
         match &mut value.payload {
             CachePayload::File(payload) => {
-                let byte_contents: &[u8] = &payload.data;
+                let byte_contents = std::mem::take(&mut payload.data);
                 if tx
                     .query_row(
                         "SELECT path FROM file WHERE path=?1",
@@ -100,7 +100,6 @@ pub(crate) fn write_db(
                         rusqlite::params![path_str.to_str(), value.modified, byte_contents],
                     )?;
                 }
-                payload.data = vec![];
             }
             CachePayload::Album(_value) => {
                 todo!()
@@ -119,4 +118,45 @@ pub(crate) fn table_exists(conn: &Connection, name: &str) -> bool {
         |row| row.get(0) as rusqlite::Result<String>,
     )
     .is_ok()
+}
+
+pub(crate) async fn periodic_cleanup(data: web::Data<MyData>, cleanup_period: u64) {
+    let mut interval = actix_rt::time::interval(std::time::Duration::from_secs(cleanup_period));
+    let mut i = 0;
+    loop {
+        interval.tick().await;
+        let mut all_files = 0;
+        let (mut cached_files, mut cache_size) = (0, 0);
+        let (res, tim) = measure_time(|| -> rusqlite::Result<()> {
+            let Ok(mut cache) = data.cache.try_lock() else {
+                return Ok(());
+            };
+            all_files = cache.len();
+            (cached_files, cache_size) = cache.values().fold((0, 0), |mut acc, entry| {
+                match entry.payload {
+                    CachePayload::File(ref f) => {
+                        if !f.data.is_empty() {
+                            acc.0 += 1;
+                            acc.1 += f.data.len();
+                        }
+                    }
+                    _ => {}
+                }
+                acc
+            });
+            i += 1;
+            write_db(&data, &mut cache)?;
+            Ok(())
+        });
+        println!(
+            "Periodic Housekeeping {i} in {tim} s: {}/{} images, est. size: {}kb",
+            cached_files,
+            all_files,
+            cache_size as f64 / 1024.
+        );
+        if let Err(e) = res {
+            // A failure to saving the file is not a fatal error. Print on console and carry on.
+            println!("Error in periodic write_db: {e}");
+        }
+    }
 }
