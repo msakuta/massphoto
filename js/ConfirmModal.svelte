@@ -3,7 +3,8 @@
 
     const dispatch = createEventDispatcher();
 
-    export let message = "Ok to logout?";
+    export let title = "";
+    export let message = "";
 
     function submit() {
         dispatch('submit');
@@ -16,9 +17,9 @@
 
 <div class="back" on:click={cancel}>
     <div class="modal" on:click|stopPropagation={() => 0}>
-        <h2>Logging Out</h2>
+        <h2>{title}</h2>
         {message}
-        <div>
+        <div class="buttons">
             <button value="Ok" on:click={submit}>Ok</button>
             <button value="Cancel" on:click={cancel}>Cancel</button>
         </div>
@@ -48,5 +49,9 @@
         padding: 20px;
         background-color: #f3f3f3;
         text-align: center;
+    }
+
+    .buttons {
+        margin: 4px;
     }
 </style>

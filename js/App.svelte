@@ -10,7 +10,7 @@
 	import Thumbnail from './Thumbnail.svelte';
 	import PasswordEntry from './PasswordEntry.svelte';
 	import UserLogin from './UserLogin.svelte';
-	import UserLogout from './UserLogout.svelte';
+	import ConfirmModal from './ConfirmModal.svelte';
 	import UserAdd from './UserAdd.svelte';
 	import UserList from './UserList.svelte';
 	import ChangePassword from './ChangePassword.svelte';
@@ -387,6 +387,8 @@
 		errorMessage = null;
 	}
 
+	let showingClearCacheDialog = false;
+
 	async function onClearCache() {
 		const res = await fetch(`${baseUrl}/clear_cache`, {
 			credentials: "include",
@@ -394,6 +396,7 @@
 		if(!res.ok){
 			errorMessage = await res.text();
 		}
+		showingClearCacheDialog = false;
 	}
 
 	async function initialize() {
@@ -409,7 +412,7 @@
 {:else if showingUserLoginDialog}
 <UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
 {:else if showingUserLogoutDialog}
-<UserLogout on:submit={onUserLogout} on:cancel={onCancelUserLogout}/>
+<ConfirmModal title="Logging Out" message="Ok to logout?" on:submit={onUserLogout} on:cancel={onCancelUserLogout}/>
 {:else if showingUserAddDialog}
 <UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
 {:else if showingChangePasswordDialog}
@@ -418,6 +421,8 @@
 <PasswordEntry title="Locking Album" on:submit={lockWithPassword} on:cancel={cancelPassword}/>
 {:else if showingUnlockDialog}
 <PasswordEntry title="Unlocking Album" message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
+{:else if showingClearCacheDialog}
+<ConfirmModal title="Clear Cache" message="Ok to clear thumbnail cache?" on:submit={onClearCache} on:cancel={() => showingClearCacheDialog = false}/>
 {/if}
 
 {#if showingUserList}
@@ -434,7 +439,7 @@
 	on:userAdd={onStartUserAdd}
 	on:userList={onUserList}
 	on:changePassword={onStartChangePassword}
-	on:clearCache={onClearCache}
+	on:clearCache={() => showingClearCacheDialog = true}
 	on:lock={onLock}
 	on:ownerChange={onStartOwnerChange} />
 {/if}
