@@ -68,7 +68,7 @@ pub(crate) async fn get_file_thumb(
             abs_path
         );
 
-        if let Some(entry) = cache.get(&abs_path) {
+        if let Some(entry) = cache.get(&path) {
             // Defaults true because some filesystems do not support file modified dates. I don't know such a
             // filesystem, but Rust documentation says so.
             if get_file_modified(&abs_path)
@@ -139,10 +139,9 @@ pub(crate) async fn get_image_comment(
     req: HttpRequest,
 ) -> Result<HttpResponse> {
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
 
     let cache = data.cache.lock().map_err(map_err)?;
-    let Some(entry) = cache.get(&abs_path) else {
+    let Some(entry) = cache.get(&path) else {
         return Err(error::ErrorNotFound("Entry not found"));
     };
     let Some(desc) = &entry.desc else {
@@ -162,14 +161,13 @@ pub(crate) async fn set_image_comment(
     let desc = std::str::from_utf8(&bytes).unwrap();
 
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
 
-    println!("Comment posted on {path:?} ({abs_path:?}): {desc}");
+    println!("Description updated on {path:?}: {desc}");
 
     let mut cache = data.cache.lock().map_err(map_err)?;
 
     let mut inserted = false;
-    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
+    let entry = cache.entry(path.clone()).or_insert_with(|| {
         inserted = true;
         CacheEntry {
             new: true,
@@ -187,13 +185,13 @@ pub(crate) async fn set_image_comment(
     let updated = if inserted {
         tx.execute(
             "INSERT INTO file (path, modified, desc) VALUES (?1, ?2, ?3)",
-            rusqlite::params![abs_path.to_str(), entry.modified, entry.desc],
+            rusqlite::params![path.to_str(), entry.modified, entry.desc],
         )
         .map_err(map_err)?
     } else {
         tx.execute(
             "UPDATE file SET desc = ?2 WHERE path = ?1",
-            rusqlite::params![abs_path.to_str(), entry.desc],
+            rusqlite::params![path.to_str(), entry.desc],
         )
         .map_err(map_err)?
     };

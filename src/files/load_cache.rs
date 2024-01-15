@@ -31,8 +31,8 @@ pub(crate) fn load_cache(
         return Ok(());
     };
 
-    let mut stmt = conn.prepare("SELECT path, modified, desc FROM file WHERE path LIKE ?1")?;
-    let file_iter = stmt.query_map([format!("{}%", abs_path)], |row| {
+    let mut stmt = conn.prepare("SELECT path, modified, desc FROM file")?;
+    let file_iter = stmt.query_map([], |row| {
         Ok(File {
             path: row.get(0)?,
             modified: row.get(1)?,

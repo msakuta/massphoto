@@ -15,7 +15,8 @@ use crate::{
 };
 
 pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
-    let conn = Connection::open("sqliter.db")?;
+    let db_path = path.join("sqliter.db");
+    let conn = Connection::open(&db_path)?;
 
     if !table_exists(&conn, "file") {
         conn.execute(
