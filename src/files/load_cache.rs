@@ -23,16 +23,10 @@ pub(crate) fn load_cache(
 
     let time_load = Instant::now();
 
-    println!("Searching files in {:?}", abs_path);
+    println!("Searching db cache in {:?}", abs_path);
 
-    let abs_path = if let Some(abs_path) = abs_path.to_str() {
-        abs_path
-    } else {
-        return Ok(());
-    };
-
-    let mut stmt = conn.prepare("SELECT path, modified, desc FROM file WHERE path LIKE ?1")?;
-    let file_iter = stmt.query_map([format!("{}%", abs_path)], |row| {
+    let mut stmt = conn.prepare("SELECT path, modified, desc FROM file")?;
+    let file_iter = stmt.query_map([], |row| {
         Ok(File {
             path: row.get(0)?,
             modified: row.get(1)?,
@@ -63,9 +57,8 @@ pub(crate) fn load_cache(
         owner: usize,
     }
 
-    let mut stmt =
-        conn.prepare("SELECT path, desc, password, owner FROM album WHERE path LIKE ?1")?;
-    let album_iter = stmt.query_map([format!("{}%", abs_path)], |row| {
+    let mut stmt = conn.prepare("SELECT path, desc, password, owner FROM album")?;
+    let album_iter = stmt.query_map([], |row| {
         Ok(Album {
             path: row.get(0)?,
             modified: 0.,

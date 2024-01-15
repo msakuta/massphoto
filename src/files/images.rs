@@ -32,7 +32,7 @@ pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Resul
     let root_dir = data.path.lock().map_err(map_err)?;
     let abs_path = root_dir.join(&path);
     let cache = data.cache.lock().unwrap();
-    authorized_path(&path, &root_dir, session, &cache, CheckAuth::Read)?;
+    authorized_path(&path, session, &cache, CheckAuth::Read)?;
     println!("Opening {:?}", abs_path);
     Ok(NamedFile::open(abs_path)?)
 }
@@ -50,25 +50,26 @@ pub(crate) async fn get_file_thumb(
         Ok(builder.body(out))
     };
 
+    let path: PathBuf;
     let abs_path;
     {
         static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
         let sessions = data.sessions.read().map_err(map_err)?;
         let session = find_session(&req, &sessions);
-        let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+        path = req.match_info().get("file").unwrap().parse().unwrap();
         let root_dir = data.path.lock().map_err(map_err)?;
         abs_path = root_dir.join(&path);
         let cache = data.cache.lock().map_err(map_err)?;
-        authorized_path(&path, &root_dir, session, &cache, CheckAuth::Read)?;
+        authorized_path(&path, session, &cache, CheckAuth::Read)?;
         let start = START.get_or_init(|| std::time::Instant::now());
         println!(
             "[{:?}] [{:?}] Opening {:?}",
             std::thread::current().id(),
             start.elapsed(),
-            abs_path
+            path
         );
 
-        if let Some(entry) = cache.get(&abs_path) {
+        if let Some(entry) = cache.get(&path) {
             // Defaults true because some filesystems do not support file modified dates. I don't know such a
             // filesystem, but Rust documentation says so.
             if get_file_modified(&abs_path)
@@ -76,8 +77,8 @@ pub(crate) async fn get_file_thumb(
                 .unwrap_or(true)
             {
                 if let CachePayload::File(payload) = &entry.payload {
-                    let data = load_cache_single(&data.conn.lock().unwrap(), &abs_path)
-                        .map_err(map_err)?;
+                    let data =
+                        load_cache_single(&data.conn.lock().unwrap(), &path).map_err(map_err)?;
                     if !data.is_empty() {
                         return result(data, entry.modified);
                     }
@@ -109,7 +110,7 @@ pub(crate) async fn get_file_thumb(
 
     let mut cache = data.cache.lock().map_err(map_err)?;
     cache.insert(
-        abs_path,
+        path,
         CacheEntry {
             new: true,
             modified,
@@ -139,10 +140,9 @@ pub(crate) async fn get_image_comment(
     req: HttpRequest,
 ) -> Result<HttpResponse> {
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
 
     let cache = data.cache.lock().map_err(map_err)?;
-    let Some(entry) = cache.get(&abs_path) else {
+    let Some(entry) = cache.get(&path) else {
         return Err(error::ErrorNotFound("Entry not found"));
     };
     let Some(desc) = &entry.desc else {
@@ -162,14 +162,13 @@ pub(crate) async fn set_image_comment(
     let desc = std::str::from_utf8(&bytes).unwrap();
 
     let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let abs_path = data.path.lock().map_err(map_err)?.join(&path);
 
-    println!("Comment posted on {path:?} ({abs_path:?}): {desc}");
+    println!("Description updated on {path:?}: {desc}");
 
     let mut cache = data.cache.lock().map_err(map_err)?;
 
     let mut inserted = false;
-    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
+    let entry = cache.entry(path.clone()).or_insert_with(|| {
         inserted = true;
         CacheEntry {
             new: true,
@@ -187,13 +186,13 @@ pub(crate) async fn set_image_comment(
     let updated = if inserted {
         tx.execute(
             "INSERT INTO file (path, modified, desc) VALUES (?1, ?2, ?3)",
-            rusqlite::params![abs_path.to_str(), entry.modified, entry.desc],
+            rusqlite::params![path.to_str(), entry.modified, entry.desc],
         )
         .map_err(map_err)?
     } else {
         tx.execute(
             "UPDATE file SET desc = ?2 WHERE path = ?1",
-            rusqlite::params![abs_path.to_str(), entry.desc],
+            rusqlite::params![path.to_str(), entry.desc],
         )
         .map_err(map_err)?
     };
