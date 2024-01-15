@@ -35,7 +35,7 @@
     }
 
     function imageStyle(){
-        return `background-image: url(${imagePath()})`;
+        return `background-image: url("${imagePath()}")`;
     }
 
     function mouseup(event) {
@@ -56,7 +56,7 @@
 
     function dirStyle() {
         if(dir)
-            return `background-image: url(${directoryImage})`;
+            return `background-image: url("${directoryImage}")`;
         else
             return "";
     }
