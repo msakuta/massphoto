@@ -13,7 +13,7 @@ use actix_web::{
     HttpRequest, HttpResponse,
 };
 
-use crate::{cache::CachePayload, map_err, MyData};
+use crate::{cache::CachePayload, MyData};
 
 pub(crate) struct Session {
     pub user_id: Option<usize>,
@@ -104,21 +104,20 @@ pub(crate) async fn authorize_album(
             "Session was not found; create a new session",
         ));
     };
-    let abs_path = data.path.lock().map_err(map_err)?.join(path.as_path());
 
     let password = String::from_utf8(bytes.to_vec())
         .map_err(|e| error::ErrorBadRequest(format!("Password needs to be a UTF-8 string: {e}")))?;
 
     let cache = data.cache.lock().unwrap();
     let entry = cache
-        .get(&abs_path)
+        .get(&*path)
         .ok_or_else(|| error::ErrorNotFound("Directory not found"))?;
     let CachePayload::Album(ref album) = entry.payload else {
         return Err(error::ErrorBadRequest("File cannot be locked"));
     };
 
     if album.password_hash == sha256::digest(password) {
-        session.auth_dirs.insert(abs_path);
+        session.auth_dirs.insert(path.into_inner());
     } else {
         return Err(error::ErrorNotAcceptable("Incorrect Password"));
     }

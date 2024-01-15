@@ -57,14 +57,12 @@ pub(crate) fn authorized(
 /// Check all ancestors of an album path.
 pub(crate) fn authorized_path(
     path: &Path,
-    root_dir: &Path,
     session: Option<&Session>,
     cache: &CacheMap,
     check_auth: CheckAuth,
 ) -> actix_web::Result<()> {
-    for seg in path.ancestors() {
-        let ancestor_path = root_dir.join(seg);
-        let Some(entry) = cache.get(&ancestor_path) else {
+    for ancestor_path in path.ancestors() {
+        let Some(entry) = cache.get(ancestor_path) else {
             // If the album is absent in the ancestry list, it is considered owned by the admin.
             if session.map(|s| !s.is_admin).unwrap_or(false)
                 && matches!(check_auth, CheckAuth::Ownership)
@@ -75,7 +73,7 @@ pub(crate) fn authorized_path(
             }
             continue;
         };
-        if authorized(&ancestor_path, &entry, session, check_auth) {
+        if authorized(ancestor_path, &entry, session, check_auth) {
             continue;
         }
         return Err(error::ErrorForbidden(
@@ -99,13 +97,7 @@ pub(crate) async fn set_album_lock(
     let root_dir = data.path.lock().map_err(map_err)?;
     let mut cache = data.cache.lock().map_err(map_err)?;
     if !session.is_admin {
-        authorized_path(
-            &path,
-            &root_dir,
-            Some(session),
-            &cache,
-            CheckAuth::Ownership,
-        )?;
+        authorized_path(&path, Some(session), &cache, CheckAuth::Ownership)?;
     }
     let password = bytes.as_ref();
     let hash = if password.is_empty() {
@@ -168,7 +160,7 @@ pub(crate) async fn get_owner(
     let cache = data.cache.lock().map_err(map_err)?;
     let abs_path = root_dir.join(path.as_ref());
     if !session.is_admin {
-        authorized_path(&path, &root_dir, Some(session), &cache, CheckAuth::Read)?;
+        authorized_path(&path, Some(session), &cache, CheckAuth::Read)?;
     }
     let owner = cache
         .get(&abs_path)

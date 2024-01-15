@@ -32,7 +32,7 @@ pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Resul
     let root_dir = data.path.lock().map_err(map_err)?;
     let abs_path = root_dir.join(&path);
     let cache = data.cache.lock().unwrap();
-    authorized_path(&path, &root_dir, session, &cache, CheckAuth::Read)?;
+    authorized_path(&path, session, &cache, CheckAuth::Read)?;
     println!("Opening {:?}", abs_path);
     Ok(NamedFile::open(abs_path)?)
 }
@@ -50,22 +50,23 @@ pub(crate) async fn get_file_thumb(
         Ok(builder.body(out))
     };
 
+    let path: PathBuf;
     let abs_path;
     {
         static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
         let sessions = data.sessions.read().map_err(map_err)?;
         let session = find_session(&req, &sessions);
-        let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+        path = req.match_info().get("file").unwrap().parse().unwrap();
         let root_dir = data.path.lock().map_err(map_err)?;
         abs_path = root_dir.join(&path);
         let cache = data.cache.lock().map_err(map_err)?;
-        authorized_path(&path, &root_dir, session, &cache, CheckAuth::Read)?;
+        authorized_path(&path, session, &cache, CheckAuth::Read)?;
         let start = START.get_or_init(|| std::time::Instant::now());
         println!(
             "[{:?}] [{:?}] Opening {:?}",
             std::thread::current().id(),
             start.elapsed(),
-            abs_path
+            path
         );
 
         if let Some(entry) = cache.get(&path) {
@@ -76,8 +77,8 @@ pub(crate) async fn get_file_thumb(
                 .unwrap_or(true)
             {
                 if let CachePayload::File(payload) = &entry.payload {
-                    let data = load_cache_single(&data.conn.lock().unwrap(), &abs_path)
-                        .map_err(map_err)?;
+                    let data =
+                        load_cache_single(&data.conn.lock().unwrap(), &path).map_err(map_err)?;
                     if !data.is_empty() {
                         return result(data, entry.modified);
                     }
@@ -109,7 +110,7 @@ pub(crate) async fn get_file_thumb(
 
     let mut cache = data.cache.lock().map_err(map_err)?;
     cache.insert(
-        abs_path,
+        path,
         CacheEntry {
             new: true,
             modified,

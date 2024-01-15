@@ -24,6 +24,7 @@ pub(crate) use self::{
 const THUMBNAIL_SIZE: u32 = 100;
 
 fn scan_dir(
+    root_path: &Path,
     cache: &CacheMap,
     path: &Path,
     session: Option<&Session>,
@@ -40,10 +41,13 @@ fn scan_dir(
         let Some(file_name) = path.file_name().and_then(|s| s.to_str()) else {
             continue;
         };
+        let Ok(rel_path) = path.strip_prefix(root_path) else {
+            continue;
+        };
         if path.is_dir() {
             let locked = cache
-                .get(&path)
-                .map(|entry| !authorized(&path, entry, session, CheckAuth::Read))
+                .get(rel_path)
+                .map(|entry| !authorized(&rel_path, entry, session, CheckAuth::Read))
                 .unwrap_or(false);
             dirs.push(json!({
                 "path": file_name,
@@ -143,7 +147,7 @@ pub(crate) async fn get_file_list_root(
     let path = data.path.lock().unwrap();
     let cache = data.cache.lock().unwrap();
 
-    let (dirs, files, _) = scan_dir(&cache, &path, session)?;
+    let (dirs, files, _) = scan_dir(&path, &cache, &path, session)?;
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -163,20 +167,21 @@ pub(crate) async fn get_file_list(
     let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let path = path.into_inner();
-    let abs_path = data.path.lock().unwrap().join(&path);
+    let root_path = data.path.lock().unwrap();
     let cache = data.cache.lock().unwrap();
 
     if cache
-        .get(&abs_path)
-        .map(|entry| !authorized(&abs_path, entry, session, CheckAuth::Read))
+        .get(&path)
+        .map(|entry| !authorized(&path, entry, session, CheckAuth::Read))
         .unwrap_or(false)
     {
-        println!("Album {abs_path:?} is locked");
+        println!("Album {path:?} is locked");
         return Err(error::ErrorForbidden(
             "Forbidden to access password protected album",
         ));
     }
-    let (dirs, files, _) = scan_dir(&cache, &abs_path, session)?;
+    let abs_path = root_path.join(&path);
+    let (dirs, files, _) = scan_dir(&root_path, &cache, &abs_path, session)?;
 
     println!("File list for {path:?}");
 
