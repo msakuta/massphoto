@@ -15,9 +15,11 @@ use crate::{
 
 pub(crate) fn init_table(conn: &Connection) -> anyhow::Result<()> {
     if !table_exists(&conn, "user") {
+        // See https://www.sqlite.org/autoinc.html for PRIMARY KEY and AUTOINCREMENT implications
+        // We want to avoid wrong user ids even though AUTOINCREMENT adds some overhead.
         conn.execute(
             "CREATE TABLE user (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 password TEXT,
                 is_admin BOOL NOT NULL
