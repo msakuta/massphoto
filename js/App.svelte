@@ -425,7 +425,7 @@
 {#if showingUserList}
 <UserList {users} on:close={onUserListClose} on:delete={onUserDelete}/>
 {:else if showingChangeOwnerDialog}
-<ChangeOwner {users} {currentOwner} on:close={() => showingChangeOwnerDialog = false} on:ok={onSetOwner}/>
+<ChangeOwner {users} {currentOwner} on:cancel={() => showingChangeOwnerDialog = false} on:ok={onSetOwner}/>
 {/if}
 
 {#if showingMainMenu}

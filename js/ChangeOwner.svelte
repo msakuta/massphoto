@@ -1,5 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import ModalFrame from './ModalFrame.svelte';
 
     const dispatch = createEventDispatcher();
 
@@ -13,8 +14,6 @@
         class_: rowClass(user),
     }));
 
-    function close() { dispatch('close') }
-
     function onSetOwner(user) {
         if(user === null) return;
         dispatch('ok', user.id);
@@ -25,51 +24,25 @@
     }
 </script>
 
-<div class="back" on:click={close}>
-    <div class="modal" on:click|stopPropagation={() => 0}>
-        <h2>Choose a new owner of this album</h2>
-        <table>
-            <tr><th>Id</th><th>Name</th><th>Password</th><th>Set owner</th></tr>
-            {#each userList as user (user.id)}
-            <tr class={user.class_}>
-                <td>{user.id}</td>
-                <td>{user.name}</td>
-                <td>{user.password}</td>
-                <td><button on:click={() => onSetOwner(user)}>Set owner</td>
-            </tr>
-            {/each}
-        </table>
-        <div>
-            <button value="Cancel" on:click={close}>Cancel</button>
-        </div>
+<ModalFrame on:cancel>
+    <h2>Choose a new owner of this album</h2>
+    <table>
+        <tr><th>Id</th><th>Name</th><th>Password</th><th>Set owner</th></tr>
+        {#each userList as user (user.id)}
+        <tr class={user.class_}>
+            <td>{user.id}</td>
+            <td>{user.name}</td>
+            <td>{user.password}</td>
+            <td><button on:click={() => onSetOwner(user)}>Set owner</td>
+        </tr>
+        {/each}
+    </table>
+    <div>
+        <button value="Cancel" on:click={() => dispatch('cancel')}>Cancel</button>
     </div>
-</div>
-
+</ModalFrame>
 
 <style>
-    .back {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding-top: 100px;
-        background-color: rgba(0, 0, 0, 0.75);
-        z-index: 1000;
-    }
-
-    .modal {
-        top: 0;
-        left: 0;
-        width: 80%;
-        max-width: 500px;
-        margin: auto;
-        padding: 20px;
-        background-color: #f3f3f3;
-        text-align: center;
-    }
-
     table {
         table-layout: auto;
         width: 80%;

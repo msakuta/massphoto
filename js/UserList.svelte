@@ -1,6 +1,7 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import DeleteConfirm from './DeleteConfirm.svelte';
+    import ModalFrame from './ModalFrame.svelte';
 
     const dispatch = createEventDispatcher();
 
@@ -21,55 +22,29 @@
     }
 </script>
 
-<div class="back" on:click={close}>
-    {#if deletingUser !== null}
-    <DeleteConfirm userName={deletingUser.name} on:ok={onDeleteOk} on:cancel={onDeleteConfirmCancel}/>
-    {/if}
+{#if deletingUser !== null}
+<DeleteConfirm userName={deletingUser.name} on:ok={onDeleteOk} on:cancel={onDeleteConfirmCancel}/>
+{/if}
 
-    <div class="modal" on:click|stopPropagation={() => 0}>
-        <h2>User List</h2>
-        <table>
-            <tr><th>Id</th><th>Name</th><th>Password</th><th>Delete</th></tr>
-            {#each users as user (user.id)}
-            <tr>
-                <td>{user.id}</td>
-                <td>{user.name}</td>
-                <td>{user.password}</td>
-                <td><button on:click={() => deletingUser = user}>Delete</button></td>
-            </tr>
-            {/each}
-        </table>
-        <div>
-        <button value="Close" on:click={close}>Close</button>
-        </div>
+<ModalFrame on:cancel={() => dispatch('close')}>
+    <h2>User List</h2>
+    <table>
+        <tr><th>Id</th><th>Name</th><th>Password</th><th>Delete</th></tr>
+        {#each users as user (user.id)}
+        <tr>
+            <td>{user.id}</td>
+            <td>{user.name}</td>
+            <td>{user.password}</td>
+            <td><button on:click={() => deletingUser = user}>Delete</button></td>
+        </tr>
+        {/each}
+    </table>
+    <div>
+    <button value="Close" on:click={() => dispatch('close')}>Close</button>
     </div>
-</div>
-
+</ModalFrame>
 
 <style>
-    .back {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding-top: 100px;
-        background-color: rgba(0, 0, 0, 0.75);
-        z-index: 1000;
-    }
-
-    .modal {
-        top: 0;
-        left: 0;
-        width: 80%;
-        max-width: 500px;
-        margin: auto;
-        padding: 20px;
-        background-color: #f3f3f3;
-        text-align: center;
-    }
-
     table {
         table-layout: auto;
         width: 80%;
