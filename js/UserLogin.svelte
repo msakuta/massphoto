@@ -7,8 +7,18 @@
     let name = "";
     let password = "";
 
+    function submit() {
+        dispatch('submit', {name, password});
+    }
+
     function cancel() {
         dispatch('cancel');
+    }
+
+    function onKeyDown(evt) {
+        switch(evt.keyCode) {
+            case 13: evt.preventDefault(); submit(); break;
+        }
     }
 </script>
 
@@ -20,10 +30,10 @@
             <input type="text" bind:value={name} autofocus>
         </label>
         <label>Password:
-            <input type="password" bind:value={password}>
+            <input type="password" bind:value={password} on:keydown={onKeyDown}>
         </label>
         <div>
-            <button value="Ok" on:click={dispatch('submit', {name, password})}>Ok</button>
+            <button value="Ok" on:click={submit}>Ok</button>
             <button value="Cancel" on:click={cancel}>Cancel</button>
         </div>
     </div>

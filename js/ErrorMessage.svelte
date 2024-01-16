@@ -12,7 +12,8 @@
     <div class="modal" on:click|stopPropagation={() => 0}>
         {message}
         <div>
-        <button value="Ok" on:click={close}>Ok</button>
+            <!-- svelte-ignore a11y-autofocus -->
+            <button value="Ok" on:click={close} autofocus>Ok</button>
         </div>
     </div>
 </div>

@@ -8,8 +8,18 @@
     let password = "";
     let passwordCheck = "";
 
+    function submit() {
+        dispatch('submit', {name, password, passwordCheck});
+    }
+
     function cancel() {
         dispatch('cancel');
+    }
+
+    function onKeyDown(evt) {
+        switch(evt.keyCode) {
+            case 13: evt.preventDefault(); submit(); break;
+        }
     }
 </script>
 
@@ -24,10 +34,10 @@
             <input type="password" bind:value={password}>
         </label>
         <label>Retype password:
-            <input type="password" bind:value={passwordCheck}>
+            <input type="password" bind:value={passwordCheck} on:keydown={onKeyDown}>
         </label>
         <div>
-            <button value="Ok" on:click={dispatch('submit', {name, password, passwordCheck})}>Ok</button>
+            <button value="Ok" on:click={submit}>Ok</button>
             <button value="Cancel" on:click={cancel}>Cancel</button>
         </div>
     </div>
