@@ -16,7 +16,8 @@
     <div class="modal" on:click|stopPropagation={() => 0}>
         <h2>{message}</h2>
         <label>New password:
-            <input type="password" bind:value={password}>
+            <!-- svelte-ignore a11y-autofocus -->
+            <input type="password" bind:value={password} autofocus>
         </label>
         <label>Retype password:
             <input type="password" bind:value={passwordCheck}>

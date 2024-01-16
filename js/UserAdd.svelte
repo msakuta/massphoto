@@ -17,7 +17,8 @@
     <div class="modal" on:click|stopPropagation={() => 0}>
         <h2>{message}</h2>
         <label>User name:
-            <input type="text" bind:value={name}>
+            <!-- svelte-ignore a11y-autofocus -->
+            <input type="text" bind:value={name} autofocus>
         </label>
         <label>Password:
             <input type="password" bind:value={password}>

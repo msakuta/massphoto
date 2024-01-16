@@ -17,7 +17,8 @@
     <div class="modal" on:click|stopPropagation={() => 0}>
         <h2>{title}</h2>
         {message}
-        <input type="password" bind:value={password}>
+        <!-- svelte-ignore a11y-autofocus -->
+        <input type="password" bind:value={password} autofocus>
         <div>
         <button value="Ok" on:click={dispatch('submit', password)}>Ok</button>
         <button value="Cancel" on:click={cancel}>Cancel</button>
