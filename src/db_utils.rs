@@ -14,9 +14,37 @@ use crate::{
     measure_time, MyData,
 };
 
+const CURRENT_VERSION: (usize, usize, usize) = (0, 1, 0);
+
 pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
     let db_path = path.join("sqliter.db");
     let conn = Connection::open(&db_path)?;
+
+    if !table_exists(&conn, "schema_version") {
+        // Keep track of when to apply migration
+        conn.execute_batch(&format!(
+            "CREATE TABLE schema_version (
+            major INTEGER NOT NULL,
+            minor INTEGER NOT NULL,
+            release INTEGER NOT NULL
+        );
+        INSERT INTO schema_version (major, minor, release) VALUES ({}, {}, {});",
+            CURRENT_VERSION.0, CURRENT_VERSION.1, CURRENT_VERSION.2,
+        ))
+        .unwrap();
+        println!("table \"schema_version\" created!");
+    } else {
+        let version: (usize, usize, usize) = conn
+            .query_row("SELECT * from schema_version", [], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })
+            .unwrap();
+        if CURRENT_VERSION.0 < version.0 {
+            return Err(anyhow::anyhow!(
+                "The database schema is newer than this program."
+            ));
+        }
+    }
 
     if !table_exists(&conn, "file") {
         conn.execute(
