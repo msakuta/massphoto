@@ -7,8 +7,8 @@
 </script>
 
 
-<div class="row" on:click={() => dispatch('click')}>
-    <img class="icon" {alt} src={src}>
+<div class="noselect row" on:click={() => dispatch('click')}>
+    <img class="icon" draggable="false" {alt} src={src}>
     <span class="valign">{label}</span>
 </div>
 

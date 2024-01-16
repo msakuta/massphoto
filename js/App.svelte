@@ -443,7 +443,7 @@
 
 <div class="header">
 	<div class="path" id="path">{rootPath}</div>
-	<div class="iconContainer">
+	<div class="iconContainer noselect">
 		<span class="userName">{userName}</span>
 		<TitleBarButton alt="home" src={homeImage} on:click={onHome} />
 		<TitleBarButton alt="up (U)" src={upImage} on:click={onUp} />
@@ -535,6 +535,19 @@
 		flex-wrap: wrap;
 		justify-content: space-evenly;
 		align-content: space-between;
+	}
+
+	/* Class that prevents text selection by mouse dragging.
+	The style is not defined by standard, so we'd write down browser-dependent styles for major browsers.
+	Support by IE11 is somewhat incomplete since Ctrl+A selects the text in elements even with this style. */
+	:global(.noselect){
+		-webkit-touch-callout: none; /* iOS Safari */
+		-webkit-user-select: none;   /* Chrome/Safari/Opera */
+		-khtml-user-select: none;    /* Konqueror */
+		-moz-user-select: none;      /* Firefox */
+		-ms-user-select: none;       /* IE/Edge */
+		user-select: none;           /* non-prefixed version, currently
+										not supported by any browser */
 	}
 </style>
 

@@ -22,7 +22,7 @@
 </script>
 
 <span on:mouseenter={startHovering} on:mouseleave={() => hovering = false}>
-    <img class="icon" bind:this={element} {alt} {src} on:click={() => dispatch('click')}>
+    <img class="icon" draggable="false" bind:this={element} {alt} {src} on:click={() => dispatch('click')}>
 </span>
 
 {#if hovering}
