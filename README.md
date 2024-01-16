@@ -1,4 +1,4 @@
-# Photoalbum-rust
+# Massphoto
 
 A photo album web server application in Rust
 
@@ -8,41 +8,46 @@ There are tons of online photo services out there.
 However, none of them fits my use case, which is on-premise
 private photo albums.
 
-The one I used in particular was zenphoto, but it was implemented
-in PHP, which is not great for performance.
+Long time ago, I used zenphoto, but it was implemented in PHP and used MySQL, which is not great for performance and maintenability.
 
-Also, I was looking for an excuse to exercise practical actix-web
-application.
-
-So I decided to make lightweight, fast, self-contained and
+So I decided to make a lightweight, fast, self-contained and
 easy to maintiain one with Rust.
 
 
 ## Overview
 
-This application uses actix-web as the server, and uses pure
-JavaScript hosted by itself.
+This is a web server application that hosts photo albums.
+The most similar existing project is [zenphoto](https://www.zenphoto.org/), but aims for easier deployment, management and backups.
 
 Notable features:
 
-* It puts priority on performance.
-* It respects directory structure of uploaded files to easily organize many images.
-* No database configuration is necessary for deployment.
-
-It caches thumbnails to a local database (sqlite via rusqlite)
-and quickly preview the list of images.
-
-Using sqlite, the server is almost maintenance-free.
-The only maintenance that could be necessary is to remove old caches,
-but I doubt even if it's necessary since cached thumbnails are usually
-much smaller than the original files.
+* **Self-contained deployment**: you don't need any third party dependencies when you deploy.
+* **Single-file executable**: a single binary file contains the backend server, the database engine and the frontend.
+* **Performance**: it uses [actix-web](https://actix.rs/) and [svelte](https://svelte.dev/),
+  which is one of the fastest combinations of frontend/backend.
+* **Easy management**: upload your files to the server directory, and that's it.
+  Your photo albums show up on the web app, organized in a directory tree.
+* **Zero-config database**: it uses embedded SQLite databse engine, which initializes on the first start.
+* **Trivial backup**: since all of your photos and database are in the directory,
+  simply copying the directory makes a backup.
+* **Cross platform**: if Rust and SQLite compiles, it works on your platform.
 
 
 ## Non-goals
 
 * Fully featured CMS. It's tempting to be ambitious but it would take forever to finish.
-* Large scale service. This software is designed for few dozen active users at maximum. It would require dedicated DBMS and would be more complicated than desired.
+* Large scale service. This software is designed for few dozen active users at maximum. SQLite concurrency model limits further scalability. It would require dedicated DBMS and would be more complicated than desired.
 * Secure system. Do not keep sensitive data in this server, unless you limit access only from internal network.
+
+
+## Technical details
+
+It caches thumbnails to a local database and quickly preview the list of images.
+
+Using sqlite, the server is almost maintenance-free.
+The only maintenance that could be necessary is to remove old caches,
+but I doubt even if it's necessary since cached thumbnails are usually
+much smaller than the original files.
 
 
 ## Access Control Rules

@@ -1025,7 +1025,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "masaphoto"
+name = "massphoto"
 version = "0.1.0"
 dependencies = [
  "actix-cors",

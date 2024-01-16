@@ -48,7 +48,7 @@ pub(crate) async fn create_session(data: web::Data<MyData>, req: HttpRequest) ->
     );
     sessions.insert(next_id.clone(), Session::new());
 
-    let cookie = Cookie::build("masaPhotoSessionId", next_id)
+    let cookie = Cookie::build("massPhotoSessionId", next_id)
         .domain("localhost")
         .path("/")
         .expires(OffsetDateTime::now_utc().checked_add(Duration::DAY))
@@ -63,7 +63,7 @@ pub(crate) async fn create_session(data: web::Data<MyData>, req: HttpRequest) ->
 }
 
 pub(crate) fn find_session<'a>(req: &HttpRequest, sessions: &'a Sessions) -> Option<&'a Session> {
-    req.cookie("masaPhotoSessionId")
+    req.cookie("massPhotoSessionId")
         .and_then(|cookie| sessions.get(cookie.value()))
 }
 
@@ -71,7 +71,7 @@ pub(crate) fn find_session_mut<'a>(
     req: &HttpRequest,
     sessions: &'a mut Sessions,
 ) -> Option<&'a mut Session> {
-    req.cookie("masaPhotoSessionId")
+    req.cookie("massPhotoSessionId")
         .and_then(|cookie| sessions.get_mut(cookie.value()))
 }
 
