@@ -154,18 +154,21 @@ pub(crate) async fn get_image_comment(
         .body(desc.clone()))
 }
 
-pub(crate) async fn set_image_comment(
+#[actix_web::post("/comments/{file:.*}")]
+pub(crate) async fn set_image_desc(
     data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
     bytes: Bytes,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
     let desc = std::str::from_utf8(&bytes).unwrap();
 
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
+    let mut cache = data.cache.lock().map_err(map_err)?;
+    authorized_path(&path, session, &cache, CheckAuth::Ownership)?;
 
     println!("Description updated on {path:?}: {desc}");
-
-    let mut cache = data.cache.lock().map_err(map_err)?;
 
     let mut inserted = false;
     let entry = cache.entry(path.clone()).or_insert_with(|| {

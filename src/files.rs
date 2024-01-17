@@ -17,7 +17,7 @@ use std::{
 
 pub(crate) use self::{
     auth::{authorized, get_owner, set_album_lock, set_owner, CheckAuth},
-    images::{get_file, get_file_thumb, get_image_comment, set_image_comment},
+    images::{get_file, get_file_thumb, get_image_comment, set_image_desc},
     load_cache::load_cache,
 };
 

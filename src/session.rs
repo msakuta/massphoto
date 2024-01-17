@@ -15,6 +15,7 @@ use actix_web::{
 
 use crate::{cache::CachePayload, MyData};
 
+#[derive(Debug)]
 pub(crate) struct Session {
     pub user_id: Option<usize>,
     /// Should we query this every time?

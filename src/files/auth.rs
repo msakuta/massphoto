@@ -64,7 +64,7 @@ pub(crate) fn authorized_path(
     for ancestor_path in path.ancestors() {
         let Some(entry) = cache.get(ancestor_path) else {
             // If the album is absent in the ancestry list, it is considered owned by the admin.
-            if session.map(|s| !s.is_admin).unwrap_or(false)
+            if session.map(|s| !s.is_admin).unwrap_or(true)
                 && matches!(check_auth, CheckAuth::Ownership)
             {
                 return Err(error::ErrorForbidden(

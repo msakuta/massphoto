@@ -149,7 +149,7 @@
     async function onCommentKeyDown(evt) {
         switch (evt.keyCode) {
             case 13:
-                dispatch('setComment', {path: imageRelPath, comment: commentValue});
+                dispatch('setDesc', {path: imageRelPath, comment: commentValue});
                 commentEditMode = false;
                 evt.preventDefault();
                 break;

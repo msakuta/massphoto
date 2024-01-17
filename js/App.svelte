@@ -365,15 +365,20 @@
 		}
 	}
 
-	async function onSetComment(evt) {
+	async function onSetDesc(evt) {
 		const res = await fetch(`${baseUrl}/comments/${evt.detail.path}`, {
 			method: "POST",
 			mode: "cors",
+			credentials: "include",
 			headers: {
 				"Content-Type": "text/plain"
 			},
 			body: evt.detail.comment,
 		});
+		if(!res.ok){
+			errorMessage = await res.text();
+			return;
+		}
 		const text = await res.text();
 		console.log(`setComment res: ${text}`);
 	}
@@ -465,7 +470,7 @@
 			on:defocus={defocus}
 			on:prev={onPrevImage}
 			on:next={onNextImage}
-			on:setComment={onSetComment}/>
+			on:setDesc={onSetDesc}/>
 	{/if}
 </div>
 {/if}
