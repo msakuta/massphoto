@@ -25,20 +25,26 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-pub(crate) async fn get_file(data: web::Data<MyData>, req: HttpRequest) -> Result<NamedFile> {
+#[actix_web::get("/files/{path:.*}")]
+pub(crate) async fn get_file(
+    data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
+    req: HttpRequest,
+) -> Result<NamedFile> {
     let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
     let root_dir = data.path.lock().map_err(map_err)?;
-    let abs_path = root_dir.join(&path);
+    let abs_path = root_dir.join(&*path);
     let cache = data.cache.lock().unwrap();
     authorized_path(&path, session, &cache, CheckAuth::Read)?;
     println!("Opening {:?}", abs_path);
     Ok(NamedFile::open(abs_path)?)
 }
 
+#[actix_web::get("/thumbs/{path:.*}")]
 pub(crate) async fn get_file_thumb(
     data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
     let result = |out, modified| {
@@ -50,15 +56,13 @@ pub(crate) async fn get_file_thumb(
         Ok(builder.body(out))
     };
 
-    let path: PathBuf;
     let abs_path;
     {
         static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
         let sessions = data.sessions.read().map_err(map_err)?;
         let session = find_session(&req, &sessions);
-        path = req.match_info().get("file").unwrap().parse().unwrap();
         let root_dir = data.path.lock().map_err(map_err)?;
-        abs_path = root_dir.join(&path);
+        abs_path = root_dir.join(&*path);
         let cache = data.cache.lock().map_err(map_err)?;
         authorized_path(&path, session, &cache, CheckAuth::Read)?;
         let start = START.get_or_init(|| std::time::Instant::now());
@@ -69,7 +73,7 @@ pub(crate) async fn get_file_thumb(
             path
         );
 
-        if let Some(entry) = cache.get(&path) {
+        if let Some(entry) = cache.get(&*path) {
             // Defaults true because some filesystems do not support file modified dates. I don't know such a
             // filesystem, but Rust documentation says so.
             if get_file_modified(&abs_path)
@@ -110,7 +114,7 @@ pub(crate) async fn get_file_thumb(
 
     let mut cache = data.cache.lock().map_err(map_err)?;
     cache.insert(
-        path,
+        path.into_inner(),
         CacheEntry {
             new: true,
             modified,
