@@ -35,6 +35,7 @@ impl Session {
 
 pub(crate) type Sessions = HashMap<String, Session>;
 
+#[actix_web::get("/sessions")]
 pub(crate) async fn create_session(data: web::Data<MyData>, req: HttpRequest) -> HttpResponse {
     let mut sessions = data.sessions.write().unwrap();
     if find_session(&req, &sessions).is_some() {

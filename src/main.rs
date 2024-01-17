@@ -131,8 +131,8 @@ async fn run() -> anyhow::Result<()> {
             .service(authorize_album)
             .service(get_owner)
             .service(set_owner)
-            .route("/sessions", web::get().to(create_session))
-            .route("/clear_cache", web::get().to(clear_cache))
+            .service(create_session)
+            .service(clear_cache)
     })
     .bind((args.host, args.port))?
     .run();

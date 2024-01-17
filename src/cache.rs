@@ -69,6 +69,7 @@ impl CacheEntry {
 /// Cached data from DB and also filesystem. It is kept in-memory and written back to disk on exit.
 pub(crate) type CacheMap = HashMap<PathBuf, CacheEntry>;
 
+#[actix_web::get("/clear_cache")]
 pub(crate) async fn clear_cache(
     data: web::Data<MyData>,
     req: HttpRequest,
