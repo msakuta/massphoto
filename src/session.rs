@@ -93,6 +93,7 @@ pub(crate) fn get_valid_session_mut<'a>(
         .ok_or_else(|| error::ErrorBadRequest("Session expired. Please reload the browser."))
 }
 
+#[actix_web::post("/albums/{file:.*}/auth")]
 pub(crate) async fn authorize_album(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,

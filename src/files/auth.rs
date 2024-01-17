@@ -83,8 +83,10 @@ pub(crate) fn authorized_path(
     Ok(())
 }
 
+#[actix_web::post("/albums/{file:.*}/lock")]
 pub(crate) async fn set_album_lock(
     data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
     req: HttpRequest,
     bytes: Bytes,
 ) -> Result<HttpResponse> {
@@ -93,8 +95,6 @@ pub(crate) async fn set_album_lock(
     let user_id = session
         .user_id
         .ok_or_else(|| error::ErrorBadRequest("You need to login to lock an album"))?;
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-    let root_dir = data.path.lock().map_err(map_err)?;
     let mut cache = data.cache.lock().map_err(map_err)?;
     if !session.is_admin {
         authorized_path(&path, Some(session), &cache, CheckAuth::Ownership)?;
@@ -106,12 +106,10 @@ pub(crate) async fn set_album_lock(
         sha256::digest(password)
     };
 
-    let abs_path = root_dir.join(&path);
-
-    println!("Password hash set on {path:?} ({abs_path:?}): {hash:?}");
+    println!("Password hash set on {path:?}: {hash:?}");
 
     let mut inserted = false;
-    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
+    let entry = cache.entry(path.clone()).or_insert_with(|| {
         inserted = true;
         CacheEntry::album_with_owner(user_id)
     });
@@ -127,18 +125,13 @@ pub(crate) async fn set_album_lock(
     let updated = if inserted {
         db.execute(
             "INSERT INTO album (path, desc, password, owner) VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![
-                abs_path.to_str(),
-                entry.desc,
-                payload.password_hash,
-                user_id
-            ],
+            rusqlite::params![path.to_str(), entry.desc, payload.password_hash, user_id],
         )
         .map_err(map_err)?
     } else {
         db.execute(
             "UPDATE album SET password = ?2 WHERE path = ?1",
-            rusqlite::params![abs_path.to_str(), payload.password_hash],
+            rusqlite::params![path.to_str(), payload.password_hash],
         )
         .map_err(map_err)?
     };
@@ -189,12 +182,10 @@ pub(crate) async fn set_owner(
         ));
     }
     let user_id = params.user_id;
-    let root_dir = data.path.lock().map_err(map_err)?;
     let mut cache = data.cache.lock().map_err(map_err)?;
-    let abs_path = root_dir.join(path.as_ref());
 
     let mut inserted = false;
-    let entry = cache.entry(abs_path.clone()).or_insert_with(|| {
+    let entry = cache.entry(path.clone()).or_insert_with(|| {
         inserted = true;
         CacheEntry::album_with_owner(user_id)
     });
@@ -207,18 +198,13 @@ pub(crate) async fn set_owner(
     let updated = if inserted {
         conn.execute(
             "INSERT INTO album (path, desc, password, owner) VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![
-                abs_path.to_str(),
-                entry.desc,
-                entry.password_hash(),
-                user_id
-            ],
+            rusqlite::params![path.to_str(), entry.desc, entry.password_hash(), user_id],
         )
         .map_err(map_err)?
     } else {
         conn.execute(
             "UPDATE album SET owner = ?1 WHERE path = ?2",
-            rusqlite::params![user_id, abs_path.to_str()],
+            rusqlite::params![user_id, path.to_str()],
         )
         .map_err(map_err)?
     };
