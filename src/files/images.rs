@@ -135,7 +135,7 @@ pub(crate) fn unix_to_system_time(unix: f64) -> Option<SystemTime> {
     SystemTime::UNIX_EPOCH.checked_add(Duration::new((unix * 3600. * 24.) as u64, 0))
 }
 
-#[actix_web::get("/comments/{file:.*}")]
+#[actix_web::get("/desc/{file:.*}")]
 pub(crate) async fn get_image_desc(
     data: web::Data<MyData>,
     path: web::Path<PathBuf>,
@@ -157,7 +157,7 @@ pub(crate) async fn get_image_desc(
         .body(desc.clone()))
 }
 
-#[actix_web::post("/comments/{file:.*}")]
+#[actix_web::post("/desc/{file:.*}")]
 pub(crate) async fn set_image_desc(
     data: web::Data<MyData>,
     path: web::Path<PathBuf>,

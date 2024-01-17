@@ -366,7 +366,7 @@
 	}
 
 	async function onSetDesc(evt) {
-		const res = await fetch(`${baseUrl}/comments/${evt.detail.path}`, {
+		const res = await fetch(`${baseUrl}/desc/${evt.detail.path}`, {
 			method: "POST",
 			mode: "cors",
 			credentials: "include",
@@ -383,7 +383,7 @@
 		console.log(`setComment res: ${text}`);
 	}
 
-	$: commentUrl = `${baseUrl}/comments/${selectedFile}`;
+	$: commentUrl = `${baseUrl}/desc/${selectedFile}`;
 
 	function onCloseErrorMessage() {
 		errorMessage = null;
