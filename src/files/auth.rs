@@ -32,15 +32,14 @@ pub(crate) fn authorized(
     cache_entry: &CacheEntry,
     session: Option<&Session>,
     check_auth: CheckAuth,
-) -> bool {
+) -> actix_web::Result<()> {
     if !cache_entry.is_locked() {
-        return true;
+        return Ok(());
     }
-    let Some(session) = session else {
-        return false;
-    };
+    let session = session
+        .ok_or_else(|| error::ErrorForbidden("Session is invalid. Try reloading the browser"))?;
     if session.is_admin {
-        return true;
+        return Ok(());
     }
     if cache_entry
         .owner()
@@ -48,10 +47,16 @@ pub(crate) fn authorized(
         .map(|(owner, user)| owner == user)
         .unwrap_or(false)
     {
-        return true;
+        return Ok(());
     }
     // When we want to know about only ownership, do not care about temporary authentication.
-    !matches!(check_auth, CheckAuth::Ownership) && session.auth_dirs.contains(path)
+    if matches!(check_auth, CheckAuth::Ownership) && session.auth_dirs.contains(path) {
+        Err(error::ErrorForbidden(
+            "Owner is different from the current session user. Ask the administrator to give you the ownership of this album.",
+        ))
+    } else {
+        Ok(())
+    }
 }
 
 /// Check all ancestors of an album path.
@@ -61,26 +66,18 @@ pub(crate) fn authorized_path(
     cache: &CacheMap,
     check_auth: CheckAuth,
 ) -> actix_web::Result<()> {
-    for ancestor_path in path.ancestors() {
-        let Some(entry) = cache.get(ancestor_path) else {
-            // If the album is absent in the ancestry list, it is considered owned by the admin.
-            if session.map(|s| !s.is_admin).unwrap_or(true)
-                && matches!(check_auth, CheckAuth::Ownership)
-            {
-                return Err(error::ErrorForbidden(
-                    "Owner is different from the current session user. Ask the administrator to give you the ownership of this album.",
-                ));
-            }
-            continue;
-        };
-        if authorized(ancestor_path, &entry, session, check_auth) {
-            continue;
+    let Some(entry) = cache.get(path) else {
+        // If the album is absent in the ancestry list, it is considered owned by the admin.
+        if session.map(|s| !s.is_admin).unwrap_or(false)
+            && matches!(check_auth, CheckAuth::Ownership)
+        {
+            return Err(error::ErrorForbidden(
+        "Owner is different from the current session user. Ask the administrator to give you the ownership of this album.",
+            ));
         }
-        return Err(error::ErrorForbidden(
-            "Forbidden to access password protected file",
-        ));
-    }
-    Ok(())
+        return Ok(());
+    };
+    authorized(path, &entry, session, check_auth)
 }
 
 #[actix_web::post("/albums/{file:.*}/lock")]
@@ -149,14 +146,12 @@ pub(crate) async fn get_owner(
 ) -> Result<String> {
     let sessions = data.sessions.read().unwrap();
     let session = get_valid_session(&req, &sessions)?;
-    let root_dir = data.path.lock().map_err(map_err)?;
     let cache = data.cache.lock().map_err(map_err)?;
-    let abs_path = root_dir.join(path.as_ref());
     if !session.is_admin {
         authorized_path(&path, Some(session), &cache, CheckAuth::Read)?;
     }
     let owner = cache
-        .get(&abs_path)
+        .get(&*path)
         .and_then(|entry| entry.owner())
         .unwrap_or(1);
     Ok(owner.to_string())

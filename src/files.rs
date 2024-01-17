@@ -47,7 +47,7 @@ fn scan_dir(
         if path.is_dir() {
             let locked = cache
                 .get(rel_path)
-                .map(|entry| !authorized(&rel_path, entry, session, CheckAuth::Read))
+                .map(|entry| authorized(&rel_path, entry, session, CheckAuth::Read).is_err())
                 .unwrap_or(false);
             dirs.push(json!({
                 "path": file_name,
@@ -172,7 +172,7 @@ pub(crate) async fn get_file_list(
 
     if cache
         .get(&path)
-        .map(|entry| !authorized(&path, entry, session, CheckAuth::Read))
+        .map(|entry| authorized(&path, entry, session, CheckAuth::Read).is_err())
         .unwrap_or(false)
     {
         println!("Album {path:?} is locked");
