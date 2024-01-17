@@ -9,7 +9,7 @@ use crate::{
     db_utils::{init_db, periodic_cleanup, write_db},
     files::{
         code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
-        get_global_css, get_image_comment, get_owner, index, set_album_lock, set_image_desc,
+        get_global_css, get_image_desc, get_owner, index, set_album_lock, set_image_desc,
         set_owner,
     },
     session::{authorize_album, create_session, Sessions},
@@ -123,7 +123,7 @@ async fn run() -> anyhow::Result<()> {
             .service(login_user)
             .service(logout_user)
             .service(set_user_password)
-            .route("/comments/{file:.*}", web::get().to(get_image_comment))
+            .service(get_image_desc)
             .service(set_image_desc)
             .route("/thumbs/{file:.*}", web::get().to(get_file_thumb))
             .route("/files/{file:.*}", web::get().to(get_file))

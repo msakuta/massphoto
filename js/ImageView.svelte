@@ -38,7 +38,9 @@
     async function getComment(commentUrl) {
         commentEditMode = false;
         if (commentUrl !== null) {
-            const res = await fetch(commentUrl);
+            const res = await fetch(commentUrl, {
+                credentials: "include",
+            });
             switch (res.status) {
                 case 200:
                     commentValue = await res.text();

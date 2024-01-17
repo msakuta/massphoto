@@ -135,14 +135,17 @@ pub(crate) fn unix_to_system_time(unix: f64) -> Option<SystemTime> {
     SystemTime::UNIX_EPOCH.checked_add(Duration::new((unix * 3600. * 24.) as u64, 0))
 }
 
-pub(crate) async fn get_image_comment(
+#[actix_web::get("/comments/{file:.*}")]
+pub(crate) async fn get_image_desc(
     data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    let path: PathBuf = req.match_info().get("file").unwrap().parse().unwrap();
-
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
     let cache = data.cache.lock().map_err(map_err)?;
-    let Some(entry) = cache.get(&path) else {
+    authorized_path(&path, session, &cache, CheckAuth::Read)?;
+    let Some(entry) = cache.get(&*path) else {
         return Err(error::ErrorNotFound("Entry not found"));
     };
     let Some(desc) = &entry.desc else {
