@@ -50,13 +50,28 @@ pub(crate) fn authorized(
         return Ok(());
     }
     // When we want to know about only ownership, do not care about temporary authentication.
-    if matches!(check_auth, CheckAuth::Ownership) && session.auth_dirs.contains(path) {
+    if matches!(check_auth, CheckAuth::Ownership) {
         Err(error::ErrorForbidden(
             "Owner is different from the current session user. Ask the administrator to give you the ownership of this album.",
         ))
+    } else if !session.auth_dirs.contains(path) {
+        Err(error::ErrorForbidden("Not authorized to access"))
     } else {
         Ok(())
     }
+}
+
+/// Return containing directory if the path was a file. Return itself if the path was a directory
+fn get_containing_directory<'a>(
+    path: &'a Path,
+    cache: &'a CacheMap,
+) -> Option<(&'a Path, &'a CacheEntry)> {
+    cache.get(path).and_then(|entry| match entry.payload {
+        CachePayload::File(_) => path
+            .parent()
+            .and_then(|p| get_containing_directory(p, cache)),
+        CachePayload::Album(_) => Some((path, entry)),
+    })
 }
 
 /// Check all ancestors of an album path.
@@ -66,8 +81,10 @@ pub(crate) fn authorized_path(
     cache: &CacheMap,
     check_auth: CheckAuth,
 ) -> actix_web::Result<()> {
-    let Some(entry) = cache.get(path) else {
-        // If the album is absent in the ancestry list, it is considered owned by the admin.
+    let entry = get_containing_directory(path, cache);
+    // Our app authenticate per album. Check the containing album authentication.
+    let Some((parent, entry)) = entry else {
+        // Files in the root directory are considered owned by the admin.
         if session.map(|s| !s.is_admin).unwrap_or(false)
             && matches!(check_auth, CheckAuth::Ownership)
         {
@@ -77,7 +94,8 @@ pub(crate) fn authorized_path(
         }
         return Ok(());
     };
-    authorized(path, &entry, session, check_auth)
+    let res = authorized(parent, &entry, session, check_auth);
+    res
 }
 
 #[actix_web::post("/albums/{file:.*}/lock")]
