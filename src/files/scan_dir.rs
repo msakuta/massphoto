@@ -1,6 +1,6 @@
 use std::{ffi::OsStr, fs, path::Path};
 
-use serde_json::{json, Value};
+use serde::Serialize;
 
 use crate::{
     cache::CacheMap,
@@ -10,12 +10,28 @@ use crate::{
 
 use super::{auth::authorized_path, authorized, has_extension_segments, CheckAuth};
 
-#[derive(serde::Serialize)]
+#[derive(Serialize)]
 pub(super) struct ScanDirResult {
-    files: Vec<Value>,
-    dirs: Vec<Value>,
+    files: Vec<File>,
+    dirs: Vec<Dir>,
     has_any_video: bool,
     owned: bool,
+}
+
+#[derive(Serialize)]
+struct Dir {
+    path: String,
+    image_first: Option<String>,
+    file_count: usize,
+    locked: bool,
+}
+
+#[derive(Serialize)]
+struct File {
+    path: String,
+    basename: String,
+    label: String,
+    video: bool,
 }
 
 pub(super) fn scan_dir(
@@ -44,14 +60,17 @@ pub(super) fn scan_dir(
                 .get(rel_path)
                 .map(|entry| authorized(&rel_path, entry, session, CheckAuth::Read).is_err())
                 .unwrap_or(false);
-            dirs.push(json!({
-                "path": file_name,
-                "image_first": image_first(&path).and_then(|image_path| {
-                    image_path.file_name()?.to_str().map(|s| s.to_owned().replace("\\", "/"))
+            dirs.push(Dir {
+                path: String::from(file_name),
+                image_first: image_first(&path).and_then(|image_path| {
+                    image_path
+                        .file_name()?
+                        .to_str()
+                        .map(|s| s.to_owned().replace("\\", "/"))
                 }),
-                "file_count": file_count(&path),
-                "locked": locked
-            }));
+                file_count: file_count(&path),
+                locked,
+            });
         } else if let Some(os_str) = path.extension() {
             // Ignore files without extensions
             let ext = os_str.to_ascii_lowercase();
@@ -71,12 +90,16 @@ pub(super) fn scan_dir(
                     continue;
                 }
             }
-            files.push(json!({
-                "path": file_name,
-                "basename": Path::new(&path).file_name().unwrap_or_else(|| OsStr::new("")).to_string_lossy(),
-                "label": file_name,
-                "video": video,
-            }));
+            files.push(File {
+                path: String::from(file_name),
+                basename: Path::new(&path)
+                    .file_name()
+                    .unwrap_or_else(|| OsStr::new(""))
+                    .to_string_lossy()
+                    .to_string(),
+                label: String::from(file_name),
+                video,
+            });
         }
     }
 
