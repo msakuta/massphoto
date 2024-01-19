@@ -1,12 +1,12 @@
-use std::{ffi::OsStr, fs, path::Path};
+use std::{
+    ffi::OsStr,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use serde::Serialize;
 
-use crate::{
-    cache::CacheMap,
-    files::{file_count, image_first},
-    session::Session,
-};
+use crate::{cache::CacheMap, session::Session};
 
 use super::{auth::authorized_path, authorized, has_extension_segments, CheckAuth};
 
@@ -114,4 +114,31 @@ pub(super) fn scan_dir(
         has_any_video,
         owned,
     })
+}
+
+fn file_count(path: &Path) -> usize {
+    fs::read_dir(path)
+        .unwrap()
+        .filter_map(|res| Some(res.ok()?.file_type().ok()?.is_file()))
+        .filter(|b| *b)
+        .count()
+}
+
+fn image_first(path: &Path) -> Option<PathBuf> {
+    fs::read_dir(path)
+        .unwrap()
+        .filter_map(|res| res.ok())
+        .find(|res| {
+            let path = res.path();
+            if path.is_file() {
+                let ext_lc = path.extension().map(|s| s.to_ascii_lowercase());
+                match ext_lc.as_ref().and_then(|s| s.to_str()) {
+                    Some("jpg") | Some("png") => true,
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        })
+        .map(|entry| entry.path())
 }

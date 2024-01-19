@@ -7,10 +7,7 @@ use self::scan_dir::{scan_dir, ScanDirResult};
 use crate::{session::find_session, MyData};
 use actix_web::{error, web, HttpRequest, HttpResponse};
 
-use std::{
-    fs, include_str,
-    path::{Path, PathBuf},
-};
+use std::{include_str, path::PathBuf};
 
 pub(crate) use self::{
     auth::{authorized, get_owner, set_album_lock, set_owner, CheckAuth},
@@ -128,31 +125,4 @@ pub(crate) fn has_extension_segments(path: &str, extension: &str) -> bool {
     } else {
         false
     }
-}
-
-pub(crate) fn file_count(path: &Path) -> usize {
-    fs::read_dir(path)
-        .unwrap()
-        .filter_map(|res| Some(res.ok()?.file_type().ok()?.is_file()))
-        .filter(|b| *b)
-        .count()
-}
-
-pub(crate) fn image_first(path: &Path) -> Option<PathBuf> {
-    fs::read_dir(path)
-        .unwrap()
-        .filter_map(|res| res.ok())
-        .find(|res| {
-            let path = res.path();
-            if path.is_file() {
-                let ext_lc = path.extension().map(|s| s.to_ascii_lowercase());
-                match ext_lc.as_ref().and_then(|s| s.to_str()) {
-                    Some("jpg") | Some("png") => true,
-                    _ => false,
-                }
-            } else {
-                false
-            }
-        })
-        .map(|entry| entry.path())
 }
