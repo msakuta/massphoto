@@ -17,6 +17,7 @@
     let client;
 
     export let imageRelPath = "";
+    export let descEditable = false;
 
     let closeButton;
     let magnifyButton;
@@ -24,40 +25,40 @@
     let fitButton;
     let prevButton;
     let nextButton;
-    let commentButton;
+    let descButton;
 
-    let commentDiv;
-    let commentEdit;
+    let descDiv;
+    let descEdit;
 
-    let commentEditMode = false;
-    let commentValue = "Hello there";
-    let commentVisible = false;
+    let descEditMode = false;
+    let descValue = "Hello there";
+    let descVisible = false;
 
-    export let commentUrl = "";
-    $: getComment(commentUrl);
-    async function getComment(commentUrl) {
-        commentEditMode = false;
-        if (commentUrl !== null) {
-            const res = await fetch(commentUrl, {
+    export let descUrl = "";
+    $: getDesc(descUrl);
+    async function getDesc(descUrl) {
+        descEditMode = false;
+        if (descUrl !== null) {
+            const res = await fetch(descUrl, {
                 credentials: "include",
             });
             switch (res.status) {
                 case 200:
-                    commentValue = await res.text();
-                    commentVisible = true;
+                    descValue = await res.text();
+                    descVisible = true;
                     break;
                 case 404:
-                    commentValue = "";
-                    commentVisible = false;
+                    descValue = "";
+                    descVisible = false;
                     break;
                 default:
-                    commentValue = "Unknown error";
-                    commentVisible = true;
+                    descValue = "Unknown error";
+                    descVisible = true;
                     break;
             }
         }
         else{
-            commentVisible = false;
+            descVisible = false;
         }
     }
 
@@ -78,7 +79,7 @@
         scale = Math.min(Math.max(0.1, scale), 20);
     }
 
-    let allButtons = [closeButton, magnifyButton, minifyButton, fitButton, commentDiv, commentEdit];
+    let allButtons = [closeButton, magnifyButton, minifyButton, fitButton, descDiv, descEdit];
 
     let dragStart = null;
     let dragMoved = false;
@@ -142,17 +143,20 @@
         dispatch('next', imagePath);
     }
 
-    async function enterCommentEditMode() {
-        commentEditMode = true;
+    async function enterDescEditMode() {
+        if(!descEditable) return;
+        descEditMode = true;
         await tick();
-        commentEdit.focus();
+        descEdit.focus();
     }
 
-    async function onCommentKeyDown(evt) {
+    async function onDescKeyDown(evt) {
         switch (evt.keyCode) {
             case 13:
-                dispatch('setDesc', {path: imageRelPath, comment: commentValue});
-                commentEditMode = false;
+                if(descEditable){
+                    dispatch('setDesc', {path: imageRelPath, desc: descValue});
+                    descEditMode = false;
+                }
                 evt.preventDefault();
                 break;
             case 37: evt.stopPropagation(); break;
@@ -161,12 +165,12 @@
     }
 
     function focusout() {
-        commentEditMode = false;
+        descEditMode = false;
     }
 
-    function toggleComment() {
-        commentVisible = !commentVisible;
-        commentEditMode = false;
+    function toggleDesc() {
+        descVisible = !descVisible;
+        descEditMode = false;
     }
 </script>
 
@@ -179,13 +183,13 @@
         <img class="button barButton" style="top: 96px" bind:this={minifyButton} src={minifyImage} alt="Minify" on:click={minify}>
         <img class="button barButton" style="top: 144px" bind:this={fitButton} src={fitImage} alt="Fit" on:click={fit}>
     </div>
-    <img class="button commentButton" bind:this={commentButton} src={commentButtonImage} alt="Comment" on:click={toggleComment}>
+    <img class="button commentButton" bind:this={descButton} src={commentButtonImage} alt="Description" on:click={toggleDesc}>
     <img class="button prevButton" bind:this={prevButton} src={leftAngleImage} alt="Prev" on:click={dispatch('prev', imagePath)}>
     <img class="button nextButton" bind:this={nextButton} src={rightAngleImage} alt="Next" on:click={next}>
-    {#if commentEditMode}
-        <textarea class="textPosition" bind:this={commentEdit} on:keydown={onCommentKeyDown} on:focusout={focusout} bind:value={commentValue}></textarea>
-    {:else if commentVisible}
-        <div class="textPosition commentShow" bind:this={commentDiv} on:click={enterCommentEditMode}>{commentValue}</div>
+    {#if descEditMode}
+        <textarea class="textPosition" bind:this={descEdit} on:keydown={onDescKeyDown} on:focusout={focusout} bind:value={descValue}></textarea>
+    {:else if descVisible}
+        <div class="textPosition commentShow" bind:this={descDiv} on:click={enterDescEditMode}>{descValue}</div>
     {/if}
 </div>
 

@@ -26,6 +26,7 @@
 
 	let dirList = [];
 	let fileList = [];
+	let dirOwned = false;
 	async function loadPage(path){
 		const headers = {  };
 		const res = await fetch(`${baseUrl}/file_list/${path}`, {
@@ -45,6 +46,7 @@
 		const json = await res.json();
 		dirList = json.dirs;
 		fileList = json.files;
+		dirOwned = json.owned;
 		selectedFile = null;
 		rootPath = path;
 	}
@@ -373,7 +375,7 @@
 			headers: {
 				"Content-Type": "text/plain"
 			},
-			body: evt.detail.comment,
+			body: evt.detail.desc,
 		});
 		if(!res.ok){
 			errorMessage = await res.text();
@@ -383,7 +385,7 @@
 		console.log(`setComment res: ${text}`);
 	}
 
-	$: commentUrl = `${baseUrl}/desc/${selectedFile}`;
+	$: descUrl = `${baseUrl}/desc/${selectedFile}`;
 
 	function onCloseErrorMessage() {
 		errorMessage = null;
@@ -465,7 +467,8 @@
 	{:else}
 		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`}
 			imageRelPath={selectedFile}
-			{commentUrl}
+			{descUrl}
+			descEditable={dirOwned}
 			buttonImageBasePath={`${baseUrl}`}
 			on:defocus={defocus}
 			on:prev={onPrevImage}

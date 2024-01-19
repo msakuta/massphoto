@@ -15,6 +15,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use self::auth::authorized_path;
 pub(crate) use self::{
     auth::{authorized, get_owner, set_album_lock, set_owner, CheckAuth},
     images::{get_file, get_file_thumb, get_image_desc, set_image_desc},
@@ -23,12 +24,20 @@ pub(crate) use self::{
 
 const THUMBNAIL_SIZE: u32 = 100;
 
+#[derive(serde::Serialize)]
+struct ScanDirResult {
+    files: Vec<Value>,
+    dirs: Vec<Value>,
+    has_any_video: bool,
+    owned: bool,
+}
+
 fn scan_dir(
     root_path: &Path,
     cache: &CacheMap,
     path: &Path,
     session: Option<&Session>,
-) -> std::io::Result<(Vec<Value>, Vec<Value>, bool)> {
+) -> std::io::Result<ScanDirResult> {
     let mut has_any_video = false;
 
     let mut dirs = vec![];
@@ -85,7 +94,17 @@ fn scan_dir(
         }
     }
 
-    Ok((dirs, files, has_any_video))
+    let owned = path
+        .strip_prefix(root_path)
+        .map(|path| authorized_path(&path, session, cache, CheckAuth::Ownership).is_ok())
+        .unwrap_or(false);
+
+    Ok(ScanDirResult {
+        dirs,
+        files,
+        has_any_video,
+        owned,
+    })
 }
 
 pub(crate) async fn index() -> HttpResponse {
@@ -141,21 +160,15 @@ pub(crate) async fn get_bundle_css() -> HttpResponse {
 pub(crate) async fn get_file_list_root(
     data: web::Data<MyData>,
     req: HttpRequest,
-) -> actix_web::Result<HttpResponse> {
+) -> actix_web::Result<web::Json<ScanDirResult>> {
     let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let path = data.path.lock().unwrap();
     let cache = data.cache.lock().unwrap();
 
-    let (dirs, files, _) = scan_dir(&path, &cache, &path, session)?;
+    let res = scan_dir(&path, &cache, &path, session)?;
 
-    Ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .json(&json!({
-            "path": "",
-            "dirs": dirs,
-            "files": files,
-        })))
+    Ok(web::Json(res))
 }
 
 #[actix_web::get("/file_list/{path:.*}")]
@@ -163,7 +176,7 @@ pub(crate) async fn get_file_list(
     path: web::Path<PathBuf>,
     data: web::Data<MyData>,
     req: HttpRequest,
-) -> actix_web::Result<HttpResponse> {
+) -> actix_web::Result<web::Json<ScanDirResult>> {
     let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let path = path.into_inner();
@@ -181,17 +194,11 @@ pub(crate) async fn get_file_list(
         ));
     }
     let abs_path = root_path.join(&path);
-    let (dirs, files, _) = scan_dir(&root_path, &cache, &abs_path, session)?;
+    let res = scan_dir(&root_path, &cache, &abs_path, session)?;
 
     println!("File list for {path:?}");
 
-    Ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .json(&json!({
-            "path": *path,
-            "dirs": dirs,
-            "files": files,
-        })))
+    Ok(web::Json(res))
 }
 
 /// Standard's `Path` can be used for last segment of file extensions,
