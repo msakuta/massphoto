@@ -9,6 +9,7 @@
 	import clearCacheImage from '../assets/clearCache.png';
 	import lockImage from '../assets/lock.png';
 	import changeOwnerImage from '../assets/changeOwner.png';
+    import uploadImage from '../assets/upload.png';
 
     const dispatch = createEventDispatcher();
 
@@ -39,6 +40,9 @@
 		{/if}
 		{#if userIsAdmin}
 			<Element alt="owner change" label="Change Album Owner" src={changeOwnerImage} on:click={() => dispatch('ownerChange')} />
+		{/if}
+		{#if userName}
+			<Element alt="upload" label="Upload a File to the Album" src={uploadImage} on:click={() => dispatch('upload')} />
 		{/if}
     </div>
 </div>

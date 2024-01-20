@@ -5,9 +5,14 @@ mod scan_dir;
 
 use self::scan_dir::{scan_dir, ScanDirResult};
 use crate::{session::find_session, MyData};
-use actix_web::{error, web, HttpRequest, HttpResponse};
+use actix_web::{
+    error,
+    web::{self, Bytes},
+    HttpRequest, HttpResponse,
+};
+use futures_util::stream::{StreamExt, TryStreamExt};
 
-use std::{include_str, path::PathBuf};
+use std::{include_str, io::Write, path::PathBuf};
 
 pub(crate) use self::{
     auth::{authorized, get_owner, set_album_lock, set_owner, CheckAuth},
@@ -109,6 +114,40 @@ pub(crate) async fn get_file_list(
     println!("File list for {path:?}");
 
     Ok(web::Json(res))
+}
+
+#[actix_web::post("/upload")]
+pub(crate) async fn upload(
+    mut payload: actix_multipart::Multipart,
+    file_path: String,
+) -> actix_web::Result<&'static str> {
+    println!("Uploading a file! {file_path:?}");
+    // iterate over multipart stream
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        let content_type = field.content_disposition();
+        println!("content_type: {content_type}");
+        //let filename = content_type.get_filename().unwrap();
+        let filepath = format!(".{}", file_path);
+        println!("filepath: {filepath}");
+
+        // File::create is blocking operation, use threadpool
+        let mut f = web::block(|| std::fs::File::create(filepath))
+            .await
+            .unwrap()
+            .unwrap();
+
+        // Field in turn is stream of *Bytes* object
+        while let Some(chunk) = field.next().await {
+            let data = chunk.unwrap();
+            // filesystem operations are blocking, we have to use threadpool
+            f = web::block(move || f.write_all(&data).map(|_| f))
+                .await
+                .unwrap()
+                .unwrap();
+        }
+    }
+
+    Ok("Ok")
 }
 
 /// Standard's `Path` can be used for last segment of file extensions,

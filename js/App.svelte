@@ -403,6 +403,12 @@
 		showingClearCacheDialog = false;
 	}
 
+	let showingUploadDialog = false;
+
+	function onUpload() {
+		showingUploadDialog = true;
+	}
+
 	async function initialize() {
 		// Get the session before fetching the first file list.
 		await createOrRestoreSession();
@@ -427,6 +433,8 @@
 <PasswordEntry title="Unlocking Album" message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
 {:else if showingClearCacheDialog}
 <ConfirmModal title="Clear Cache" message="Ok to clear thumbnail cache?" on:submit={onClearCache} on:cancel={() => showingClearCacheDialog = false}/>
+{:else if showingUploadDialog}
+<UploadImage {baseUrl} on:cancel={() => showingUploadDialog = false}/>
 {/if}
 
 {#if showingUserList}
@@ -445,7 +453,8 @@
 	on:changePassword={onStartChangePassword}
 	on:clearCache={() => showingClearCacheDialog = true}
 	on:lock={onLock}
-	on:ownerChange={onStartOwnerChange} />
+	on:ownerChange={onStartOwnerChange}
+	on:upload={onUpload} />
 {/if}
 
 <div class="header">

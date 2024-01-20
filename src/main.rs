@@ -10,7 +10,7 @@ use crate::{
     files::{
         code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
         get_global_css, get_image_desc, get_owner, index, set_album_lock, set_image_desc,
-        set_owner,
+        set_owner, upload,
     },
     session::{authorize_album, create_session, Sessions},
     user::{
@@ -133,6 +133,7 @@ async fn run() -> anyhow::Result<()> {
             .service(set_owner)
             .service(create_session)
             .service(clear_cache)
+            .service(upload)
     })
     .bind((args.host, args.port))?
     .run();
