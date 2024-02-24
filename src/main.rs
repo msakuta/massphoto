@@ -24,7 +24,7 @@ use clap::Parser;
 
 use rusqlite::Connection;
 use std::{
-    path::{Path, PathBuf},
+    path::{PathBuf},
     sync::{Mutex, RwLock},
     time::Instant,
 };
@@ -37,6 +37,7 @@ struct MyData {
     conn: Mutex<Connection>,
     // stats: Mutex<StatsBundle>,
     sessions: RwLock<Sessions>,
+    cors_origin: String,
 }
 
 #[derive(Parser, Debug)]
@@ -88,7 +89,7 @@ async fn main() -> std::io::Result<()> {
 async fn run() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    let data = init_db(Path::new(&args.path))?;
+    let data = init_db(&args)?;
 
     let data_copy = data.clone();
     let server_fut = HttpServer::new(move || {

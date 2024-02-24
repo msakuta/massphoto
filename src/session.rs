@@ -51,7 +51,7 @@ pub(crate) async fn create_session(data: web::Data<MyData>, req: HttpRequest) ->
     sessions.insert(next_id.clone(), Session::new());
 
     let cookie = Cookie::build("massPhotoSessionId", next_id)
-        .domain("localhost")
+        .domain(&data.cors_origin)
         .path("/")
         .expires(OffsetDateTime::now_utc().checked_add(Duration::DAY))
         .http_only(true)

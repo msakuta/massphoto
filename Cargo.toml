@@ -2,6 +2,10 @@
 name = "massphoto"
 version = "0.1.0"
 edition = "2021"
+description = "Mass photo album hosting server"
+authors = ["Masahiro Sakuta"]
+license = "MIT"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -11,12 +11,13 @@ use rusqlite::Connection;
 use crate::{
     cache::{CacheEntry, CachePayload},
     files::load_cache,
-    measure_time, MyData,
+    measure_time, Args, MyData,
 };
 
 const CURRENT_VERSION: (usize, usize, usize) = (0, 1, 0);
 
-pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
+pub(crate) fn init_db(args: &Args) -> anyhow::Result<web::Data<MyData>> {
+    let path = Path::new(&args.path);
     let db_path = path.join("sqliter.db");
     let conn = Connection::open(&db_path)?;
 
@@ -87,6 +88,7 @@ pub(crate) fn init_db(path: &Path) -> anyhow::Result<web::Data<MyData>> {
         conn: Mutex::new(conn),
         // stats: Mutex::default(),
         sessions: RwLock::default(),
+        cors_origin: args.cors_origin.clone(),
     });
     Ok(data)
 }
