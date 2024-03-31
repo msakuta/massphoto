@@ -463,7 +463,8 @@
 {#if selectedFile !== null}
 <div class="imageContainer">
 	{#if isSelectedVideo}
-		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}/>
+		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}
+			on:close={defocus}/>
 	{:else}
 		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`}
 			imageRelPath={selectedFile}

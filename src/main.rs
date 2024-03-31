@@ -24,7 +24,7 @@ use clap::Parser;
 
 use rusqlite::Connection;
 use std::{
-    path::{PathBuf},
+    path::PathBuf,
     sync::{Mutex, RwLock},
     time::Instant,
 };
