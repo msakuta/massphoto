@@ -464,7 +464,14 @@
 <div class="imageContainer">
 	{#if isSelectedVideo}
 		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}
-			on:close={defocus}/>
+			videoRelPath={selectedFile}
+			{descUrl}
+			descEditable={dirOwned}
+			buttonImageBasePath={`${baseUrl}`}
+			on:close={defocus}
+			on:prev={onPrevImage}
+			on:next={onNextImage}
+			on:setDesc={onSetDesc}/>
 	{:else}
 		<ImageView imagePath={`${baseUrl}/files/${selectedFile}`}
 			imageRelPath={selectedFile}

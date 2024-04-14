@@ -23,10 +23,6 @@
     let magnifyButton;
     let minifyButton;
     let fitButton;
-    let prevButton;
-    let nextButton;
-    let descButton;
-
     let descDiv;
     let descEdit;
 
@@ -183,9 +179,9 @@
         <img class="button barButton" style="top: 96px" bind:this={minifyButton} src={minifyImage} alt="Minify" on:click={minify}>
         <img class="button barButton" style="top: 144px" bind:this={fitButton} src={fitImage} alt="Fit" on:click={fit}>
     </div>
-    <img class="button commentButton" bind:this={descButton} src={commentButtonImage} alt="Description" on:click={toggleDesc}>
-    <img class="button prevButton" bind:this={prevButton} src={leftAngleImage} alt="Prev" on:click={dispatch('prev', imagePath)}>
-    <img class="button nextButton" bind:this={nextButton} src={rightAngleImage} alt="Next" on:click={next}>
+    <img class="button commentButton" src={commentButtonImage} alt="Description" on:click={toggleDesc}>
+    <img class="button prevButton" src={leftAngleImage} alt="Prev" on:click={dispatch('prev', imagePath)}>
+    <img class="button nextButton" src={rightAngleImage} alt="Next" on:click={next}>
     {#if descEditMode}
         <textarea class="textPosition" bind:this={descEdit} on:keydown={onDescKeyDown} on:focusout={focusout} bind:value={descValue}></textarea>
     {:else if descVisible}
