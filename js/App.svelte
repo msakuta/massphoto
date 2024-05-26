@@ -519,7 +519,18 @@
 		z-index: 100;
 		overflow:hidden;
 		background-color: #afafaf;
+        animation: 0.15s ease-out 0.075s 1 both running slidein;
 	}
+
+    @keyframes slidein {
+        from {
+            transform: translate(0, -100%);
+        }
+        to {
+            transform: translate(0, 0);
+        }
+    }
+
 
 	.path {
 		font-size: 1.5em;
