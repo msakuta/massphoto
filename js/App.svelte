@@ -47,7 +47,7 @@
 		dirList = json.dirs;
 		fileList = json.files;
 		dirOwned = json.owned;
-		selectedFile = null;
+		unselectFile();
 		rootPath = path;
 	}
 
@@ -87,7 +87,7 @@
 	}
 
 	function defocus(){
-		selectedFile = null;
+		unselectFile();
 	}
 
 	function selectDir(event){
@@ -351,6 +351,15 @@
 		selectedFile = joinPath(rootPath, fileList[Math.min(fileList.length - 1, found[1] + 1)].path);
 	}
 
+	let unselectingFile = false;
+
+	async function unselectFile() {
+		unselectingFile = true;
+		await new Promise(r => setTimeout(r, 150));
+		selectedFile = null;
+		unselectingFile = false;
+	}
+
 	let isSelectedVideo = false;
 
 	$: {
@@ -461,7 +470,7 @@
 </div>
 
 {#if selectedFile !== null}
-<div class="imageContainer">
+<div class="imageContainer" class:imageContainerOut={unselectingFile}>
 	{#if isSelectedVideo}
 		<VideoView videoPath={`${baseUrl}/files/${selectedFile}`}
 			videoRelPath={selectedFile}
@@ -519,18 +528,30 @@
 		z-index: 100;
 		overflow:hidden;
 		background-color: #afafaf;
-        animation: 0.15s ease-out 0.075s 1 both running slidein;
+		animation: 0.15s ease-out 0.075s 1 both running slidein;
 	}
 
-    @keyframes slidein {
-        from {
-            transform: translate(0, -100%);
-        }
-        to {
-            transform: translate(0, 0);
-        }
-    }
+	.imageContainerOut {
+		animation: 0.15s ease-out 0.075s 1 both running slideout;
+	}
 
+	@keyframes slidein {
+		from {
+			transform: translate(0, -100%);
+		}
+		to {
+			transform: translate(0, 0);
+		}
+	}
+
+	@keyframes slideout {
+		from {
+			transform: translate(0, 0);
+		}
+		to {
+			transform: translate(0, -100%);
+		}
+	}
 
 	.path {
 		font-size: 1.5em;
