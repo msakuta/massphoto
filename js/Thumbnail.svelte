@@ -91,6 +91,9 @@
         padding: 0em;
         margin-bottom: 5px;
     }
+    .showcase:hover {
+        filter: drop-shadow(0px 0px 4px green);
+    }
     .labelText {
         font-weight: bold;
         text-shadow: 1px 1px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
