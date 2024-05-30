@@ -501,7 +501,7 @@
 			<Thumbnail {dir} {rootPath} {baseUrl} on:setFocus={selectDir}/>
 		{/each}
 		{#each fileList as file (file.path)}
-			<Thumbnail image={file} {rootPath} {baseUrl} on:setFocus={setFocus}/>
+			<Thumbnail image={file} {rootPath} {baseUrl} focused={joinPath(rootPath, file.path) === selectedFile} on:setFocus={setFocus}/>
 		{/each}
 	</div>
 </div>

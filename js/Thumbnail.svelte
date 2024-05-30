@@ -12,7 +12,7 @@
     export let dir = null;
     export let rootPath = "";
     export let baseUrl = "";
-
+    export let focused = false;
 
     function imagePath(){
         if(dir){
@@ -62,7 +62,7 @@
     }
 </script>
 
-<div class="dir showcase" style={dirStyle()}>
+<div class="dir showcase" class:focused={focused} style={dirStyle()}>
     <div class="abs labelText smallText">{dir ? dir.path : image.label}</div>
     <div class={dir ? "smallIcon" : "bigIcon"}>
         <div class="zoomInt" style={imageStyle()}
@@ -92,6 +92,11 @@
         margin-bottom: 5px;
     }
     .showcase:hover {
+        filter: drop-shadow(0px 0px 4px green);
+    }
+    .showcase.focused {
+        border: solid green 4px;
+        margin: -4px;
         filter: drop-shadow(0px 0px 4px green);
     }
     .labelText {
