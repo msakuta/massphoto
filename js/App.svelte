@@ -327,6 +327,7 @@
     }
 
     let showingUploadDialog = false;
+    let fileUploadResult = null;
 
     async function onUpload(event) {
         const file = event.detail.files[0];
@@ -341,7 +342,9 @@
                 errorMessage = await res.text();
                 return;
             }
-            return parseInt(await res.text());
+            const uploaded = await res.text();
+            fileUploadResult = `Upload result: ${uploaded}`;
+            loadPage(rootPath);
         })();
         showingUploadDialog = false;
     }
@@ -443,6 +446,8 @@
 
 {#if errorMessage !== null}
 <ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
+{:else if fileUploadResult !== null}
+<ConfirmModal title="Upload result" message={fileUploadResult} cancelButton={false} on:submit={() => fileUploadResult = null} />
 {:else if showingUserLoginDialog}
 <UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
 {:else if showingUserLogoutDialog}

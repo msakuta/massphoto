@@ -6,6 +6,7 @@
 
     export let title = "";
     export let message = "";
+    export let cancelButton = true;
 </script>
 
 <ModalFrame on:cancel>
@@ -14,7 +15,9 @@
     <div class="buttons">
         <!-- svelte-ignore a11y-autofocus -->
         <button value="Ok" on:click={() => dispatch('submit')} autofocus>Ok</button>
-        <button value="Cancel" on:click={() => dispatch('cancel')}>Cancel</button>
+        {#if cancelButton}
+            <button value="Cancel" on:click={() => dispatch('cancel')}>Cancel</button>
+        {/if}
     </div>
 </ModalFrame>
 

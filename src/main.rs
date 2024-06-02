@@ -134,6 +134,7 @@ async fn run() -> anyhow::Result<()> {
             .service(set_owner)
             .service(create_session)
             .service(clear_cache)
+            .app_data(web::PayloadConfig::new(10_000_000))
             .service(upload)
     })
     .bind((args.host, args.port))?
