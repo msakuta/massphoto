@@ -221,7 +221,16 @@ pub(crate) async fn upload(
     bytes: Bytes,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    println!("uploading {path:?}");
+    let Some(path_str) = path.as_os_str().to_str() else {
+        return Err(error::ErrorInternalServerError(
+            "File path is not a valid string",
+        ));
+    };
+    if path_str.contains("..") {
+        return Err(error::ErrorInternalServerError(
+            "Uploading to paths containing \"..\" is prohibited",
+        ));
+    }
     let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let root_dir = data.path.lock().map_err(map_err)?;
