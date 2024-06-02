@@ -213,3 +213,22 @@ pub(crate) async fn set_image_desc(
 
     Ok(HttpResponse::Ok().content_type("text/plain").body("ok"))
 }
+
+#[actix_web::post("/upload/{file:.*}")]
+pub(crate) async fn upload(
+    data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
+    bytes: Bytes,
+    req: HttpRequest,
+) -> Result<HttpResponse> {
+    println!("uploading {path:?}");
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
+    let root_dir = data.path.lock().map_err(map_err)?;
+    let abs_path = root_dir.join(&*path);
+    let cache = data.cache.lock().unwrap();
+    authorized_path(&path, session, &cache, CheckAuth::Ownership)?;
+    println!("Uploading {:?}", abs_path);
+    std::fs::write(abs_path, bytes)?;
+    Ok(HttpResponse::Ok().content_type("text/plain").body("ok"))
+}

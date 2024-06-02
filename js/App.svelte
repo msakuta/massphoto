@@ -15,6 +15,7 @@
 	import UserList from './UserList.svelte';
 	import ChangePassword from './ChangePassword.svelte';
 	import ChangeOwner from './ChangeOwner.svelte';
+	import Upload from './Upload.svelte';
 	import TitleBarButton from './TitleBarButton.svelte';
 	import MainMenu from './MainMenu.svelte';
 	import ErrorMessage from './ErrorMessage.svelte';
@@ -325,6 +326,26 @@
 		showingChangeOwnerDialog = true;
 	}
 
+	let showingUploadDialog = false;
+
+	async function onUpload(event) {
+		const file = event.detail.files[0];
+		console.log(`onUpload: ${file}`);
+		const uploadFut = (async () => {
+			const res = await fetch(`${baseUrl}/upload/${file.name}`, {
+				method: "POST",
+				credentials: "include",
+				body: await event.detail.files[0].arrayBuffer()
+			});
+			if(!res.ok){
+				errorMessage = await res.text();
+				return;
+			}
+			return parseInt(await res.text());
+		})();
+		showingUploadDialog = false;
+	}
+
 	async function onSetOwner(evt) {
 		const res = await fetch(`${baseUrl}/albums/${rootPath}/set_owner`, {
 			method: "POST",
@@ -436,6 +457,8 @@
 <PasswordEntry title="Unlocking Album" message="Enter password to unlock:" on:submit={tryUnlock} on:cancel={cancelUnlock}/>
 {:else if showingClearCacheDialog}
 <ConfirmModal title="Clear Cache" message="Ok to clear thumbnail cache?" on:submit={onClearCache} on:cancel={() => showingClearCacheDialog = false}/>
+{:else if showingUploadDialog}
+<Upload on:submit={onUpload} on:cancel={() => showingUploadDialog = false}/>
 {/if}
 
 {#if showingUserList}
@@ -454,7 +477,8 @@
 	on:changePassword={onStartChangePassword}
 	on:clearCache={() => showingClearCacheDialog = true}
 	on:lock={onLock}
-	on:ownerChange={onStartOwnerChange} />
+	on:ownerChange={onStartOwnerChange}
+	on:upload={() => showingUploadDialog = true} />
 {/if}
 
 <div class="header">

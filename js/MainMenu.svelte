@@ -1,14 +1,15 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import Element from './MainMenu/Element.svelte';
-	import userImage from '../assets/user.png';
-	import userAddImage from '../assets/userAdd.png';
-	import usersImage from '../assets/users.png';
-	import userLogoutImage from '../assets/userLogout.png';
-	import keyImage from '../assets/key.png';
-	import clearCacheImage from '../assets/clearCache.png';
-	import lockImage from '../assets/lock.png';
-	import changeOwnerImage from '../assets/changeOwner.png';
+    import userImage from '../assets/user.png';
+    import userAddImage from '../assets/userAdd.png';
+    import usersImage from '../assets/users.png';
+    import userLogoutImage from '../assets/userLogout.png';
+    import keyImage from '../assets/key.png';
+    import clearCacheImage from '../assets/clearCache.png';
+    import lockImage from '../assets/lock.png';
+    import changeOwnerImage from '../assets/changeOwner.png';
+    import uploadImage from '../assets/upload.png';
 
     const dispatch = createEventDispatcher();
 
@@ -34,12 +35,15 @@
         {#if userIsAdmin}
             <Element alt="clearcache" label="Clear Cache" src={clearCacheImage} on:click={() => dispatch('clearCache')} />
         {/if}
-		{#if userName}
-			<Element alt="lock" label="Lock Current Album" src={lockImage} on:click={() => dispatch('lock')} />
-		{/if}
-		{#if userIsAdmin}
-			<Element alt="owner change" label="Change Album Owner" src={changeOwnerImage} on:click={() => dispatch('ownerChange')} />
-		{/if}
+        {#if userName}
+            <Element alt="lock" label="Lock Current Album" src={lockImage} on:click={() => dispatch('lock')} />
+        {/if}
+        {#if userIsAdmin}
+            <Element alt="owner change" label="Change Album Owner" src={changeOwnerImage} on:click={() => dispatch('ownerChange')} />
+        {/if}
+        {#if userIsAdmin}
+            <Element alt="upload" label="Upload" src={uploadImage} on:click={() => dispatch('upload')} />
+        {/if}
     </div>
 </div>
 
