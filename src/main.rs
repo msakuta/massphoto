@@ -73,6 +73,13 @@ struct Args {
         help = "Interval to auto-cleanup cache memory, in seconds."
     )]
     cleanup_period: u64,
+    #[clap(
+        short = 'u',
+        long,
+        default_value = "5000000",
+        help = "Upload file size limit, in bytes."
+    )]
+    upload_limit: u64,
 }
 
 fn map_err(err: impl ToString) -> Error {
@@ -134,7 +141,7 @@ async fn run() -> anyhow::Result<()> {
             .service(set_owner)
             .service(create_session)
             .service(clear_cache)
-            .app_data(web::PayloadConfig::new(10_000_000))
+            .app_data(web::PayloadConfig::new(args.upload_limit as usize))
             .service(upload)
     })
     .bind((args.host, args.port))?

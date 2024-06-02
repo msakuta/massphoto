@@ -75,7 +75,7 @@ And these are the rules of albums:
 * [x] Access control per directory
 * [x] Description for each image
 * [x] Video playback support (mp4)
-* [ ] Upload images
+* [x] Upload images
 * [ ] Periodic update of new file cache
 * [ ] Periodic cleanup of outdated cache
 
