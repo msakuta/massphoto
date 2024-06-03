@@ -8,9 +8,9 @@ use crate::{
     cache::{clear_cache, CacheMap},
     db_utils::{init_db, periodic_cleanup, write_db},
     files::{
-        code, get_bundle_css, get_file, get_file_list, get_file_list_root, get_file_thumb,
-        get_global_css, get_image_desc, get_owner, index, set_album_lock, set_image_desc,
-        set_owner, upload,
+        code, delete_file, get_bundle_css, get_file, get_file_list, get_file_list_root,
+        get_file_thumb, get_global_css, get_image_desc, get_owner, index, set_album_lock,
+        set_image_desc, set_owner, upload,
     },
     session::{authorize_album, create_session, Sessions},
     user::{
@@ -135,6 +135,7 @@ async fn run() -> anyhow::Result<()> {
             .service(set_image_desc)
             .service(get_file_thumb)
             .service(get_file)
+            .service(delete_file)
             .service(set_album_lock)
             .service(authorize_album)
             .service(get_owner)

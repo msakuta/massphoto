@@ -74,6 +74,21 @@ fn get_containing_directory<'a>(
     })
 }
 
+/// Check if the path is valid (i.e. a valid string and does not contain "..")
+pub(crate) fn validate_path(path: &Path) -> actix_web::Result<()> {
+    let Some(path_str) = path.as_os_str().to_str() else {
+        return Err(error::ErrorInternalServerError(
+            "File path is not a valid string",
+        ));
+    };
+    if path_str.contains("..") {
+        return Err(error::ErrorInternalServerError(
+            "Uploading to paths containing \"..\" is prohibited",
+        ));
+    }
+    Ok(())
+}
+
 /// Check all ancestors of an album path.
 pub(crate) fn authorized_path(
     path: &Path,

@@ -76,6 +76,11 @@ And these are the rules of albums:
 * [x] Description for each image
 * [x] Video playback support (mp4)
 * [x] Upload images
+* [x] Deleting images
+* [ ] Moving images
+* [ ] Creating albums
+* [ ] Deleting albums
+* [ ] Moving albums
 * [ ] Periodic update of new file cache
 * [ ] Periodic cleanup of outdated cache
 

@@ -10,6 +10,8 @@
     import lockImage from '../assets/lock.png';
     import changeOwnerImage from '../assets/changeOwner.png';
     import uploadImage from '../assets/upload.png';
+    import deleteImage from '../assets/shred.png';
+
 
     const dispatch = createEventDispatcher();
 
@@ -43,6 +45,9 @@
         {/if}
         {#if userIsAdmin}
             <Element alt="upload" label="Upload" src={uploadImage} on:click={() => dispatch('upload')} />
+        {/if}
+        {#if userIsAdmin}
+            <Element alt="delete" label="Delete" src={deleteImage} on:click={() => dispatch('delete')} />
         {/if}
     </div>
 </div>

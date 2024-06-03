@@ -18,6 +18,7 @@
     import Upload from './Upload.svelte';
     import TitleBarButton from './TitleBarButton.svelte';
     import MainMenu from './MainMenu.svelte';
+    import DeleteMenu from './DeleteMenu.svelte';
     import ErrorMessage from './ErrorMessage.svelte';
     import { joinPath } from './joinPath';
 
@@ -46,7 +47,10 @@
         }
         const json = await res.json();
         dirList = json.dirs;
-        fileList = json.files;
+        fileList = json.files.map(file => {
+            file.deleting = false;
+            return file;
+        });
         dirOwned = json.owned;
         unselectFile();
         rootPath = path;
@@ -61,6 +65,8 @@
     let errorMessage = null;
     let userName = "";
     let userIsAdmin = false;
+
+    let deleteMode = false;
 
     async function createOrRestoreSession() {
         const res = await fetch(`${baseUrl}/sessions`, {
@@ -84,7 +90,16 @@
     }
 
     function setFocus(evt){
-        selectedFile = evt.detail;
+        if (!deleteMode) {
+            selectedFile = evt.detail;
+        }
+        else {
+            const found = fileList.find(file => file.path === evt.detail);
+            if (found) {
+                found.deleting = !found.deleting;
+                fileList = fileList; // Invoke reactiveness
+            }
+        }
     }
 
     function defocus(){
@@ -92,11 +107,47 @@
     }
 
     function selectDir(event){
-        loadPage(event.detail);
+        if (!deleteMode) {
+            loadPage(event.detail);
+        }
     }
 
     function onHome(){
         loadPage("");
+    }
+
+    let showingFileDeleteConfirmModal = false;
+
+    function deleteFiles(){
+        if (!fileList.some(file => file.deleting)) {
+            errorMessage = "Select at least one file to delete.";
+            return;
+        }
+        showingFileDeleteConfirmModal = true;
+    }
+
+    async function confirmDeleteFiles(){
+        showingFileDeleteConfirmModal = false;
+        const promises = fileList.filter(file => file.deleting).map(file => (async () => {
+            const res = await fetch(`${baseUrl}/files/${file.path}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+            if (!res.ok) {
+                const response = await res.text();
+                errorMessage = `Deleting a file failed: ${response}`;
+                return;
+            }
+        })());
+        exitFileDeleteMode();
+        await Promise.all(promises);
+        loadPage(rootPath);
+    }
+
+    function exitFileDeleteMode(){
+        deleteMode = false;
+        fileList.forEach(file => file.deleting = false);
+        fileList = fileList;
     }
 
     function onUp(){
@@ -326,6 +377,14 @@
         showingChangeOwnerDialog = true;
     }
 
+    async function onStartDelete() {
+        deleteMode = !deleteMode;
+        if (deleteMode) {
+            // Deselect the image while deleting
+            defocus();
+        }
+    }
+
     let showingUploadDialog = false;
     let fileUploadResult = null;
 
@@ -448,6 +507,8 @@
 <ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
 {:else if fileUploadResult !== null}
 <ConfirmModal title="Upload result" message={fileUploadResult} cancelButton={false} on:submit={() => fileUploadResult = null} />
+{:else if showingFileDeleteConfirmModal}
+<ConfirmModal title="Delete confirm" message="Are you sure you want to delete files?" on:submit={confirmDeleteFiles} on:cancel={() => showingFileDeleteConfirmModal = false} />
 {:else if showingUserLoginDialog}
 <UserLogin on:submit={onUserLogin} on:cancel={onCancelUserLogin}/>
 {:else if showingUserLogoutDialog}
@@ -483,18 +544,27 @@
     on:clearCache={() => showingClearCacheDialog = true}
     on:lock={onLock}
     on:ownerChange={onStartOwnerChange}
-    on:upload={() => showingUploadDialog = true} />
+    on:upload={() => showingUploadDialog = true}
+    on:delete={onStartDelete} />
 {/if}
 
-<div class="header">
-    <div class="path" id="path">{rootPath}</div>
+<div class="header" class:deletingHeader={deleteMode}>
+    <div class="path" id="path">{rootPath}
+    {#if deleteMode}
+        DELETING
+    {/if}
+    </div>
     <div class="iconContainer noselect">
         <span class="userName">{userName}</span>
+        {#if deleteMode}
+        <DeleteMenu on:ok={deleteFiles} on:cancel={exitFileDeleteMode}/>
+        {:else}
         <TitleBarButton alt="home" src={homeImage} on:click={onHome} />
         <TitleBarButton alt="up (U)" src={upImage} on:click={onUp} />
         <TitleBarButton alt="previous (H)" src={leftImage} />
         <TitleBarButton alt="next (K)" src={rightImage} />
         <TitleBarButton alt="menu" src={hamburgerImage} on:click={() => showingMainMenu = true} />
+        {/if}
     </div>
 </div>
 
@@ -530,7 +600,8 @@
             <Thumbnail {dir} {rootPath} {baseUrl} on:setFocus={selectDir}/>
         {/each}
         {#each fileList as file (file.path)}
-            <Thumbnail image={file} {rootPath} {baseUrl} focused={joinPath(rootPath, file.path) === selectedFile} on:setFocus={setFocus}/>
+            <Thumbnail deleting={file.deleting}
+                image={file} {rootPath} {baseUrl} focused={joinPath(rootPath, file.path) === selectedFile} on:setFocus={setFocus}/>
         {/each}
     </div>
 </div>
@@ -562,6 +633,10 @@
 
     .imageContainerOut {
         animation: 0.15s ease-out 0.075s 1 both running slideout;
+    }
+
+    .deletingHeader {
+        background-color: #ffafaf;
     }
 
     @keyframes slidein {

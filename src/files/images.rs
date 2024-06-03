@@ -1,5 +1,5 @@
 use super::{
-    auth::{authorized_path, CheckAuth},
+    auth::{authorized_path, validate_path, CheckAuth},
     THUMBNAIL_SIZE,
 };
 use crate::{
@@ -39,6 +39,24 @@ pub(crate) async fn get_file(
     authorized_path(&path, session, &cache, CheckAuth::Read)?;
     println!("Opening {:?}", abs_path);
     Ok(NamedFile::open(abs_path)?)
+}
+
+#[actix_web::delete("/files/{path:.*}")]
+pub(crate) async fn delete_file(
+    data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
+    req: HttpRequest,
+) -> Result<HttpResponse> {
+    validate_path(&*path)?;
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
+    let root_dir = data.path.lock().map_err(map_err)?;
+    let abs_path = root_dir.join(&*path);
+    let cache = data.cache.lock().unwrap();
+    authorized_path(&path, session, &cache, CheckAuth::Ownership)?;
+    println!("Deleting {:?}", abs_path);
+    std::fs::remove_file(&*abs_path)?;
+    Ok(HttpResponse::Ok().content_type("text/plain").body("Ok"))
 }
 
 #[actix_web::get("/thumbs/{path:.*}")]
@@ -221,16 +239,7 @@ pub(crate) async fn upload(
     bytes: Bytes,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    let Some(path_str) = path.as_os_str().to_str() else {
-        return Err(error::ErrorInternalServerError(
-            "File path is not a valid string",
-        ));
-    };
-    if path_str.contains("..") {
-        return Err(error::ErrorInternalServerError(
-            "Uploading to paths containing \"..\" is prohibited",
-        ));
-    }
+    validate_path(&*path)?;
     let sessions = data.sessions.read().unwrap();
     let session = find_session(&req, &sessions);
     let root_dir = data.path.lock().map_err(map_err)?;
