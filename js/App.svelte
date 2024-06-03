@@ -94,7 +94,7 @@
             selectedFile = evt.detail;
         }
         else {
-            const found = fileList.find(file => file.path === evt.detail);
+            const found = fileList.find(file => joinPath(rootPath, file.path) === evt.detail);
             if (found) {
                 found.deleting = !found.deleting;
                 fileList = fileList; // Invoke reactiveness
@@ -118,7 +118,7 @@
 
     let showingFileDeleteConfirmModal = false;
 
-    function deleteFiles(){
+    function startDeleteFiles(){
         if (!fileList.some(file => file.deleting)) {
             errorMessage = "Select at least one file to delete.";
             return;
@@ -129,7 +129,8 @@
     async function confirmDeleteFiles(){
         showingFileDeleteConfirmModal = false;
         const promises = fileList.filter(file => file.deleting).map(file => (async () => {
-            const res = await fetch(`${baseUrl}/files/${file.path}`, {
+            const filePath = joinPath(rootPath, file.path);
+            const res = await fetch(`${baseUrl}/files/${filePath}`, {
                 method: "DELETE",
                 credentials: "include",
             });
@@ -390,9 +391,10 @@
 
     async function onUpload(event) {
         const file = event.detail.files[0];
-        console.log(`onUpload: ${file}`);
+        const filePath = joinPath(rootPath, file.name);
+        console.log(`onUpload: ${filePath}`);
         const uploadFut = (async () => {
-            const res = await fetch(`${baseUrl}/upload/${file.name}`, {
+            const res = await fetch(`${baseUrl}/upload/${filePath}`, {
                 method: "POST",
                 credentials: "include",
                 body: await event.detail.files[0].arrayBuffer()
@@ -557,7 +559,7 @@
     <div class="iconContainer noselect">
         <span class="userName">{userName}</span>
         {#if deleteMode}
-        <DeleteMenu on:ok={deleteFiles} on:cancel={exitFileDeleteMode}/>
+        <DeleteMenu on:ok={startDeleteFiles} on:cancel={exitFileDeleteMode}/>
         {:else}
         <TitleBarButton alt="home" src={homeImage} on:click={onHome} />
         <TitleBarButton alt="up (U)" src={upImage} on:click={onUp} />
