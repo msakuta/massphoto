@@ -89,7 +89,7 @@
         userIsAdmin = result.is_admin;
     }
 
-    function setFocus(evt){
+    function clickFile(evt){
         if (!deleteMode) {
             selectedFile = evt.detail;
         }
@@ -597,11 +597,11 @@
 <div class="scrollContents" style={selectedFile !== null ? 'top: 70%' : ''}>
     <div class='dirContainer' id="thumbnails">
         {#each dirList as dir (dir.path)}
-            <Thumbnail {dir} {rootPath} {baseUrl} on:setFocus={selectDir}/>
+            <Thumbnail {dir} {rootPath} {baseUrl} on:click={selectDir}/>
         {/each}
         {#each fileList as file (file.path)}
             <Thumbnail deleting={file.deleting}
-                image={file} {rootPath} {baseUrl} focused={joinPath(rootPath, file.path) === selectedFile} on:setFocus={setFocus}/>
+                image={file} {rootPath} {baseUrl} focused={joinPath(rootPath, file.path) === selectedFile} on:click={clickFile}/>
         {/each}
     </div>
 </div>

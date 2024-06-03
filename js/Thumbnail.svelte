@@ -42,7 +42,7 @@
     function mouseup(event) {
         event.preventDefault();
         if (event.button === 0) {
-            dispatch('setFocus', joinPath(rootPath, dir ? dir.path : image.path));
+            dispatch('click', joinPath(rootPath, dir ? dir.path : image.path));
         }
         if (event.button === 2){
             dispatch('selectImage');
