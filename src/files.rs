@@ -11,7 +11,9 @@ use std::{include_str, path::PathBuf};
 
 pub(crate) use self::{
     auth::{authorized, get_owner, set_album_lock, set_owner, CheckAuth},
-    images::{delete_file, get_file, get_file_thumb, get_image_desc, set_image_desc, upload},
+    images::{
+        delete_file, get_file, get_file_thumb, get_image_desc, move_file, set_image_desc, upload,
+    },
     load_cache::load_cache,
 };
 

@@ -18,9 +18,11 @@
     import Upload from './Upload.svelte';
     import TitleBarButton from './TitleBarButton.svelte';
     import MainMenu from './MainMenu.svelte';
-    import DeleteMenu from './DeleteMenu.svelte';
+    import FileSelectMenu from './FileSelectMenu.svelte';
     import ErrorMessage from './ErrorMessage.svelte';
     import { joinPath } from './joinPath';
+    import MoveDest from './MoveDest.svelte';
+    import { destroy_block } from 'svelte/internal';
 
     const baseUrl = BASE_URL;
 
@@ -49,6 +51,7 @@
         dirList = json.dirs;
         fileList = json.files.map(file => {
             file.deleting = false;
+            file.moving = false;
             return file;
         });
         dirOwned = json.owned;
@@ -67,6 +70,7 @@
     let userIsAdmin = false;
 
     let deleteMode = false;
+    let moveMode = false;
 
     async function createOrRestoreSession() {
         const res = await fetch(`${baseUrl}/sessions`, {
@@ -90,15 +94,22 @@
     }
 
     function clickFile(evt){
-        if (!deleteMode) {
-            selectedFile = evt.detail;
-        }
-        else {
+        if (deleteMode) {
             const found = fileList.find(file => joinPath(rootPath, file.path) === evt.detail);
             if (found) {
                 found.deleting = !found.deleting;
                 fileList = fileList; // Invoke reactiveness
             }
+        }
+        else if(moveMode) {
+            const found = fileList.find(file => joinPath(rootPath, file.path) === evt.detail);
+            if (found) {
+                found.moving = !found.moving;
+                fileList = fileList; // Invoke reactiveness
+            }
+        }
+        else {
+            selectedFile = evt.detail;
         }
     }
 
@@ -249,6 +260,8 @@
         showingUserAddDialog = false;
     }
 
+    let showingMoveDialog = false;
+
     let showingChangePasswordDialog = false;
 
     function onStartChangePassword() {
@@ -381,9 +394,53 @@
     async function onStartDelete() {
         deleteMode = !deleteMode;
         if (deleteMode) {
+            moveMode = false;
             // Deselect the image while deleting
             defocus();
         }
+    }
+
+    async function onStartMove() {
+        moveMode = !moveMode;
+        if (moveMode) {
+            deleteMode = false;
+            // Deselect the image while deleting
+            defocus();
+        }
+    }
+
+    function startMove(){
+        if (!fileList.some(file => file.moving)) {
+            errorMessage = "Select at least one file to move.";
+            return;
+        }
+        showingMoveDialog = true;
+    }
+
+    function exitMove(){
+        moveMode = false;
+        fileList.forEach(file => file.moving = false);
+        fileList = fileList; // Invoke reactivity
+    }
+
+    async function onMove(evt){
+        showingMoveDialog = false;
+        const promises = fileList.filter(file => file.moving).map(file => (async () => {
+            const filePath = joinPath(rootPath, file.path);
+            const res = await fetch(`${baseUrl}/files/${filePath}/move`, {
+                method: "POST",
+                credentials: "include",
+                body: joinPath(rootPath, evt.detail),
+            });
+            if (!res.ok) {
+                const response = await res.text();
+                errorMessage = `Moving a file failed: ${response}`;
+                return;
+            }
+        })());
+        exitMove();
+        await Promise.all(promises);
+        loadPage(rootPath);
     }
 
     let showingUploadDialog = false;
@@ -517,6 +574,8 @@
 <ConfirmModal title="Logging Out" message="Ok to logout?" on:submit={onUserLogout} on:cancel={onCancelUserLogout}/>
 {:else if showingUserAddDialog}
 <UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
+{:else if showingMoveDialog}
+<MoveDest {dirList} on:move={onMove} on:cancel={() => showingMoveDialog = false}/>
 {:else if showingChangePasswordDialog}
 <ChangePassword on:submit={onChangePassword} on:cancel={() => showingChangePasswordDialog = false}/>
 {:else if showingLockDialog}
@@ -547,19 +606,24 @@
     on:lock={onLock}
     on:ownerChange={onStartOwnerChange}
     on:upload={() => showingUploadDialog = true}
-    on:delete={onStartDelete} />
+    on:delete={onStartDelete}
+    on:move={onStartMove} />
 {/if}
 
-<div class="header" class:deletingHeader={deleteMode}>
+<div class="header" class:deletingHeader={deleteMode} class:movingHeader={moveMode}>
     <div class="path" id="path">{rootPath}
     {#if deleteMode}
         DELETING
+    {:else if moveMode}
+        MOVING
     {/if}
     </div>
     <div class="iconContainer noselect">
         <span class="userName">{userName}</span>
         {#if deleteMode}
-        <DeleteMenu on:ok={startDeleteFiles} on:cancel={exitFileDeleteMode}/>
+        <FileSelectMenu on:ok={startDeleteFiles} on:cancel={exitFileDeleteMode}/>
+        {:else if moveMode}
+        <FileSelectMenu on:ok={startMove} on:cancel={exitMove}/>
         {:else}
         <TitleBarButton alt="home" src={homeImage} on:click={onHome} />
         <TitleBarButton alt="up (U)" src={upImage} on:click={onUp} />
@@ -603,6 +667,7 @@
         {/each}
         {#each fileList as file (file.path)}
             <Thumbnail deleting={file.deleting}
+                moving={file.moving}
                 image={file} {rootPath} {baseUrl} focused={joinPath(rootPath, file.path) === selectedFile} on:click={clickFile}/>
         {/each}
     </div>
@@ -639,6 +704,10 @@
 
     .deletingHeader {
         background-color: #ffafaf;
+    }
+
+    .movingHeader {
+        background-color: #afffaf;
     }
 
     @keyframes slidein {

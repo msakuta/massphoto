@@ -59,6 +59,32 @@ pub(crate) async fn delete_file(
     Ok(HttpResponse::Ok().content_type("text/plain").body("Ok"))
 }
 
+#[actix_web::post("/files/{path:.*}/move")]
+pub(crate) async fn move_file(
+    data: web::Data<MyData>,
+    path: web::Path<PathBuf>,
+    dest: String,
+    req: HttpRequest,
+) -> Result<HttpResponse> {
+    validate_path(&*path)?;
+    let sessions = data.sessions.read().unwrap();
+    let session = find_session(&req, &sessions);
+    let root_dir = data.path.lock().map_err(map_err)?;
+    let abs_path = root_dir.join(&*path);
+    let dest = Path::new(&dest);
+    let dest_path = root_dir.join(
+        &path
+            .file_name()
+            .map(|path| dest.join(path))
+            .unwrap_or_else(|| PathBuf::from(dest)),
+    );
+    let cache = data.cache.lock().unwrap();
+    authorized_path(&path, session, &cache, CheckAuth::Ownership)?;
+    println!("Moving {abs_path:?} to {dest_path:?}");
+    std::fs::rename(&*abs_path, dest_path)?;
+    Ok(HttpResponse::Ok().content_type("text/plain").body("Ok"))
+}
+
 #[actix_web::get("/thumbs/{path:.*}")]
 pub(crate) async fn get_file_thumb(
     data: web::Data<MyData>,

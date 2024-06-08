@@ -11,6 +11,7 @@
     import changeOwnerImage from '../assets/changeOwner.png';
     import uploadImage from '../assets/upload.png';
     import deleteImage from '../assets/shred.png';
+    import moveDirImage from '../assets/moveDirectory.png';
 
 
     const dispatch = createEventDispatcher();
@@ -48,6 +49,9 @@
         {/if}
         {#if userIsAdmin}
             <Element alt="delete" label="Delete" src={deleteImage} on:click={() => dispatch('delete')} />
+        {/if}
+        {#if userIsAdmin}
+            <Element alt="move" label="Move Files" src={moveDirImage} on:click={() => dispatch('move')} />
         {/if}
     </div>
 </div>
