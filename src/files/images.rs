@@ -72,16 +72,40 @@ pub(crate) async fn move_file(
     let root_dir = data.path.lock().map_err(map_err)?;
     let abs_path = root_dir.join(&*path);
     let dest = Path::new(&dest);
-    let dest_path = root_dir.join(
-        &path
-            .file_name()
-            .map(|path| dest.join(path))
-            .unwrap_or_else(|| PathBuf::from(dest)),
-    );
-    let cache = data.cache.lock().unwrap();
+    let dest_path = path
+        .file_name()
+        .map(|path| dest.join(path))
+        .unwrap_or_else(|| PathBuf::from(dest));
+    let dest_abs_path = root_dir.join(&dest_path);
+    validate_path(&dest_abs_path)?;
+    let mut cache = data.cache.lock().unwrap();
     authorized_path(&path, session, &cache, CheckAuth::Ownership)?;
-    println!("Moving {abs_path:?} to {dest_path:?}");
-    std::fs::rename(&*abs_path, dest_path)?;
+    authorized_path(&dest, session, &cache, CheckAuth::Ownership)?;
+    println!("Moving {path:?} to {dest_path:?}");
+
+    std::fs::rename(&*abs_path, &dest_abs_path)?;
+    let entry = cache.remove(&*path);
+    if let Some(entry) = entry {
+        println!("Found an entry to move for {:?}", &*path);
+        let payload = entry.payload.clone();
+        if let CachePayload::File(payload) = payload {
+            let mut db = data.conn.lock().unwrap();
+            let tx = db.transaction().map_err(map_err)?;
+            tx.execute(
+                "DELETE FROM file WHERE path = ?1",
+                rusqlite::params![path.to_str()],
+            )
+            .map_err(map_err)?;
+            tx.execute(
+                "INSERT INTO file (path, modified, desc, data) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![dest_path.to_str(), entry.modified, entry.desc, payload.data],
+            )
+            .map_err(map_err)?;
+            tx.commit().map_err(map_err)?;
+            println!("Moved file to {:?}", dest);
+        }
+        cache.insert(dest_path.clone(), entry);
+    }
     Ok(HttpResponse::Ok().content_type("text/plain").body("Ok"))
 }
 

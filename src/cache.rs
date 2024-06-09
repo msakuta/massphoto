@@ -6,18 +6,18 @@ use actix_web::{error, web, HttpRequest, HttpResponse};
 
 use crate::{map_err, session::get_valid_session, MyData};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct FilePayload {
     pub data: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct AlbumPayload {
     pub password_hash: String,
     pub owner: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum CachePayload {
     File(FilePayload),
     Album(AlbumPayload),
