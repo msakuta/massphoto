@@ -29,10 +29,11 @@
     }
 
     .modal {
-        top: 0;
-        left: 0;
+        display: flex;
+        flex-direction: column;
         width: 80%;
         max-width: 500px;
+        max-height: 80%;
         margin: auto;
         padding: 20px;
         background-color: #ffffff;

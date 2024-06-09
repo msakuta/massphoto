@@ -32,6 +32,7 @@
 
 <ModalFrame on:cancel={() => dispatch('cancel')}>
     <h2>Move destination</h2>
+    <div class="scrollable">
     <table>
         <tr><th>Image</th><th>Path</th><th>Move</th></tr>
         <tr>
@@ -47,8 +48,9 @@
         </tr>
         {/each}
     </table>
+    </div>
     <div>
-    <button value="Cancel" on:click={() => dispatch('cancel')}>Cancel</button>
+    <button class="bottomButon" value="Cancel" on:click={() => dispatch('cancel')}>Cancel</button>
     </div>
 </ModalFrame>
 
@@ -65,5 +67,14 @@
     td, th {
         border: 1px solid #7f7f7f;
         padding: 4px;
+    }
+
+    .scrollable {
+        max-height: 80%;
+        overflow-y: scroll;
+    }
+
+    .bottomButon {
+        margin: 4px;
     }
 </style>
