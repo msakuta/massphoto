@@ -575,7 +575,7 @@
 {:else if showingUserAddDialog}
 <UserAdd on:submit={onUserAdd} on:cancel={onCancelUserAdd}/>
 {:else if showingMoveDialog}
-<MoveDest {dirList} on:move={onMove} on:cancel={() => showingMoveDialog = false}/>
+<MoveDest {rootPath} {baseUrl} {dirList} on:move={onMove} on:cancel={() => showingMoveDialog = false}/>
 {:else if showingChangePasswordDialog}
 <ChangePassword on:submit={onChangePassword} on:cancel={() => showingChangePasswordDialog = false}/>
 {:else if showingLockDialog}

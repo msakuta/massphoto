@@ -2,9 +2,12 @@
     import { createEventDispatcher } from 'svelte';
     import ModalFrame from './ModalFrame.svelte';
     import MoveConfirm from './MoveConfirm.svelte';
+    import { joinPath } from './joinPath';
 
     const dispatch = createEventDispatcher();
 
+    export let baseUrl = "";
+    export let rootPath = "";
     export let dirList = [];
     export let destDir = null;
 
@@ -17,6 +20,10 @@
         destDir = null;
         evt.stopPropagation();
     }
+
+    function imagePath(dir) {
+        return `${baseUrl}/thumbs/${joinPath(rootPath, joinPath(dir.path, dir.image_first))}`;
+    }
 </script>
 
 {#if destDir !== null}
@@ -26,13 +33,15 @@
 <ModalFrame on:cancel={() => dispatch('cancel')}>
     <h2>Move destination</h2>
     <table>
-        <tr><th>Path</th><th>Move</th></tr>
+        <tr><th>Image</th><th>Path</th><th>Move</th></tr>
         <tr>
+            <td></td>
             <td>..</td>
             <td><button on:click={() => destDir = {path: ".."}}>Move</button></td>
         </tr>
         {#each dirList as dir (dir.path)}
         <tr>
+            <td><img alt={dir.image_first} src={imagePath(dir)}></td>
             <td>{dir.path}</td>
             <td><button on:click={() => destDir = dir}>Move</button></td>
         </tr>
