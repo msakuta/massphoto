@@ -88,7 +88,6 @@ pub(crate) fn init_db(args: &Args) -> anyhow::Result<web::Data<MyData>> {
         conn: Mutex::new(conn),
         // stats: Mutex::default(),
         sessions: RwLock::default(),
-        cors_origin: args.cors_origin.clone(),
     });
     Ok(data)
 }

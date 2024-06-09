@@ -37,7 +37,6 @@ struct MyData {
     conn: Mutex<Connection>,
     // stats: Mutex<StatsBundle>,
     sessions: RwLock<Sessions>,
-    cors_origin: String,
 }
 
 #[derive(Parser, Debug)]
@@ -108,7 +107,7 @@ async fn run() -> anyhow::Result<()> {
             } else {
                 cors.allowed_origin(&args.cors_origin)
             };
-            cors.allowed_methods(vec!["GET", "POST"])
+            cors.allowed_methods(vec!["GET", "POST", "DELETE"])
                 .allowed_header(actix_web::http::header::CONTENT_TYPE)
                 .max_age(3600)
         };
