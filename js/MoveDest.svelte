@@ -56,18 +56,19 @@
 
 <ModalFrame on:cancel={() => dispatch('cancel')}>
     <h2>Move destination</h2>
+    <div class="margin">Current path: {rootPath}</div>
     <div class="scrollable">
     <table>
         <tr><th>Image</th><th>Path</th><th>Move</th></tr>
         <tr>
             <td></td>
-            <td>.</td>
+            <td>. (Current directory)</td>
             <td><button on:click={() => destDir = {path: ""}}>Move</button></td>
         </tr>
         {#if rootPath !== ""}
         <tr>
             <td><img alt="Up" src={upImage} on:click={() => clickDir("..")}></td>
-            <td><span on:click={() => clickDir("..")}>..</span></td>
+            <td><span on:click={() => clickDir("..")}>.. (Parent directory)</span></td>
             <td><button on:click={() => destDir = {path: ".."}}>Move</button></td>
         </tr>
         {/if}
@@ -81,7 +82,7 @@
     </table>
     </div>
     <div>
-    <button class="bottomButon" value="Cancel" on:click={() => dispatch('cancel')}>Cancel</button>
+    <button class="margin" value="Cancel" on:click={() => dispatch('cancel')}>Cancel</button>
     </div>
 </ModalFrame>
 
@@ -100,12 +101,12 @@
         padding: 4px;
     }
 
+    .margin {
+        margin: 4px;
+    }
+
     .scrollable {
         max-height: 80%;
         overflow-y: scroll;
-    }
-
-    .bottomButon {
-        margin: 4px;
     }
 </style>

@@ -5,7 +5,7 @@
     const dispatch = createEventDispatcher();
 
     export let dirPath = "";
-    $: message = `Do you want to move to directory "${dirPath}"?`;
+    $: message = `Do you want to move the selected files to directory "${dirPath}"?`;
 </script>
 
 <ModalFrame on:cancel zIndex="1200">
