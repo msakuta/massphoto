@@ -26,11 +26,14 @@
 <ModalFrame on:cancel={() => dispatch('cancel')}>
     <h2>Move destination</h2>
     <table>
-        <tr><th>Name</th><th>Password</th><th>Delete</th></tr>
+        <tr><th>Path</th><th>Move</th></tr>
+        <tr>
+            <td>..</td>
+            <td><button on:click={() => destDir = {path: ".."}}>Move</button></td>
+        </tr>
         {#each dirList as dir (dir.path)}
         <tr>
             <td>{dir.path}</td>
-            <td>{dir.password}</td>
             <td><button on:click={() => destDir = dir}>Move</button></td>
         </tr>
         {/each}
