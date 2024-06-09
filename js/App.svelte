@@ -430,7 +430,7 @@
             const res = await fetch(`${baseUrl}/files/${filePath}/move`, {
                 method: "POST",
                 credentials: "include",
-                body: joinPath(rootPath, evt.detail),
+                body: evt.detail,
             });
             if (!res.ok) {
                 const response = await res.text();

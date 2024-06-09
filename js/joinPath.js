@@ -7,6 +7,7 @@ export function joinPath(root, path){
         if (0 < i) {
             return root.substring(0, i);
         }
+        return "";
     }
     else {
         return root + "/" + path;

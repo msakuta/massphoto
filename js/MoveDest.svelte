@@ -1,7 +1,9 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import upImage from '../assets/up.png';
     import ModalFrame from './ModalFrame.svelte';
     import MoveConfirm from './MoveConfirm.svelte';
+    import ErrorMessage from './ErrorMessage.svelte';
     import { joinPath } from './joinPath';
 
     const dispatch = createEventDispatcher();
@@ -11,8 +13,10 @@
     export let dirList = [];
     export let destDir = null;
 
+    let errorMessage = null;
+
     function onMoveOk() {
-        dispatch('move', destDir.path);
+        dispatch('move', joinPath(rootPath, destDir.path));
         destDir = null;
     }
 
@@ -24,10 +28,30 @@
     function imagePath(dir) {
         return `${baseUrl}/thumbs/${joinPath(rootPath, joinPath(dir.path, dir.image_first))}`;
     }
+
+    function onCloseErrorMessage() {
+        errorMessage = null;
+    }
+
+    async function clickDir(dirPath) {
+        rootPath = joinPath(rootPath, dirPath);
+        const res = await fetch(`${baseUrl}/file_list/${rootPath}`, {
+            method: "GET",
+            credentials: "include",
+        });
+        if(!res.ok){
+            errorMessage = await res.text();
+            return;
+        }
+        const json = await res.json();
+        dirList = json.dirs;
+    }
 </script>
 
-{#if destDir !== null}
-<MoveConfirm dirPath={destDir.path} on:ok={onMoveOk} on:cancel={onMoveCancel}/>
+{#if errorMessage !== null}
+<ErrorMessage message={errorMessage} on:close={onCloseErrorMessage}/>
+{:else if destDir !== null}
+<MoveConfirm dirPath={joinPath(rootPath, destDir.path)} on:ok={onMoveOk} on:cancel={onMoveCancel}/>
 {/if}
 
 <ModalFrame on:cancel={() => dispatch('cancel')}>
@@ -37,13 +61,20 @@
         <tr><th>Image</th><th>Path</th><th>Move</th></tr>
         <tr>
             <td></td>
-            <td>..</td>
+            <td>.</td>
+            <td><button on:click={() => destDir = {path: ""}}>Move</button></td>
+        </tr>
+        {#if rootPath !== ""}
+        <tr>
+            <td><img alt="Up" src={upImage} on:click={() => clickDir("..")}></td>
+            <td><span on:click={() => clickDir("..")}>..</span></td>
             <td><button on:click={() => destDir = {path: ".."}}>Move</button></td>
         </tr>
+        {/if}
         {#each dirList as dir (dir.path)}
         <tr>
-            <td><img alt={dir.image_first} src={imagePath(dir)}></td>
-            <td>{dir.path}</td>
+            <td><img alt={dir.image_first} src={imagePath(dir)} on:click={() => clickDir(dir.path)}></td>
+            <td><span on:click={() => clickDir(dir.path)}>{dir.path}</span></td>
             <td><button on:click={() => destDir = dir}>Move</button></td>
         </tr>
         {/each}
