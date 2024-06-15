@@ -77,7 +77,7 @@ And these are the rules of albums:
 * [x] Video playback support (mp4)
 * [x] Upload images
 * [x] Deleting images
-* [ ] Moving images
+* [x] Moving images
 * [ ] Creating albums
 * [ ] Deleting albums
 * [ ] Moving albums
