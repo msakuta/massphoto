@@ -78,22 +78,20 @@
     }
 </script>
 
-<div>
-    <video id="videoContainer" controls width="100%" height="100%" preload="auto" src={videoPath}>
-    Your browser does not support the <code>video</code> element.
-    </video>
-    <div class="buttonContainer">
-        <img class="button barButton" bind:this={closeButton} src={closeImage} alt="Close" on:click={() => dispatch('close')}>
-    </div>
-    <img class="button commentButton" src={commentButtonImage} alt="Description" on:click={toggleDesc}>
-    <img class="button prevButton" src={leftAngleImage} alt="Prev" on:click={() => dispatch('prev', videoPath)}>
-    <img class="button nextButton" src={rightAngleImage} alt="Next" on:click={() => dispatch('next', videoPath)}>
-    {#if descEditMode}
-        <textarea class="textPosition" bind:this={descEdit} on:keydown={onDescKeyDown} on:focusout={focusout} bind:value={descValue}></textarea>
-    {:else if descVisible}
-        <div class="textPosition commentShow" bind:this={descDiv} on:click={enterDescEditMode}>{descValue}</div>
-    {/if}
+<video id="videoContainer" controls width="100%" height="100%" preload="auto" src={videoPath}>
+Your browser does not support the <code>video</code> element.
+</video>
+<div class="buttonContainer">
+    <img class="button barButton" bind:this={closeButton} src={closeImage} alt="Close" on:click={() => dispatch('close')}>
 </div>
+<img class="button commentButton" src={commentButtonImage} alt="Description" on:click={toggleDesc}>
+<img class="button prevButton" src={leftAngleImage} alt="Prev" on:click={() => dispatch('prev', videoPath)}>
+<img class="button nextButton" src={rightAngleImage} alt="Next" on:click={() => dispatch('next', videoPath)}>
+{#if descEditMode}
+    <textarea class="textPosition" bind:this={descEdit} on:keydown={onDescKeyDown} on:focusout={focusout} bind:value={descValue}></textarea>
+{:else if descVisible}
+    <div class="textPosition commentShow" bind:this={descDiv} on:click={enterDescEditMode}>{descValue}</div>
+{/if}
 
 <style>
     .button {
