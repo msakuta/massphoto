@@ -558,6 +558,8 @@
         // Get the session before fetching the first file list.
         await createOrRestoreSession();
         getUserStatus();
+        const params = new URLSearchParams(document.location.search);
+        rootPath = params.get("album") || "";
         loadPage(rootPath);
     }
 </script>
