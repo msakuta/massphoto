@@ -103,6 +103,9 @@ pub(super) fn scan_dir(
         }
     }
 
+    dirs.sort_by_key(|dir| dir.path.clone());
+    files.sort_by_key(|file| file.basename.clone());
+
     let owned = path
         .strip_prefix(root_path)
         .map(|path| authorized_path(&path, session, cache, CheckAuth::Ownership).is_ok())
