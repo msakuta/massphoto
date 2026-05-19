@@ -16,7 +16,7 @@ use actix_web::{
     web::{self, Bytes},
     HttpRequest, HttpResponse, Result,
 };
-use image::{io::Reader as ImageReader, ImageOutputFormat};
+use image::{ImageFormat, ImageReader};
 
 use std::{
     fs,
@@ -175,7 +175,7 @@ pub(crate) async fn get_file_thumb(
     let thumbnail = img.thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
     let mut out = vec![];
     thumbnail
-        .write_to(&mut Cursor::new(&mut out), ImageOutputFormat::Jpeg(85))
+        .write_to(&mut Cursor::new(&mut out), ImageFormat::Jpeg)
         .map_err(|err| error::ErrorInternalServerError(err.to_string()))?;
 
     let modified = get_file_modified(&abs_path).unwrap_or(0.);
